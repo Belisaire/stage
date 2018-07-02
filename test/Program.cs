@@ -16,6 +16,7 @@ namespace TransactSqlScriptDomTest
         static string path_queries = @"..\..\..\queries.txt";
         static string path_script = @"..\..\..\view_script.txt";
         static string path_myf = @"..\..\..\myf.txt";
+        static string lol;
 
         static void Main(string[] args)
         {
