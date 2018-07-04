@@ -22,100 +22,108 @@ namespace TransactSqlScriptDomTest
         {
 
             /*Lire fichier*/
-            File.Delete(@"C:\Users\Yann\Desktop\test.xml");
-            string text = System.IO.File.ReadAllText(path_queries);
-            string[] queries = text.Split("________________________________________");
-            /*Initialisation parser*/
-            var parser = new TSql130Parser(false);
-            /*Stocke les erreurs liés à la lecture du parser*/
-            IList<ParseError> errors;
-            /*Iniatilisation*/
-            string text2 = System.IO.File.ReadAllText(path_script);
-            Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
-            string[] views = Regex.Split(text2, "________________________________________");
-            String sDir = @"F:\storage\sqlshare_data_release1\sqlshare_data_release1\data";
-            foreach (String view in views)
+            // File.Delete(@"C:\Users\Yann\Desktop\test.xml");
+            if (!File.Exists(path_script))
             {
-                Regex rx = new Regex(@"\(\[.*\]\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                Regex rx2 = new Regex(@"\[[^\[\]\(\)]*\]\.\[[^\[\]]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                // Find matches.
-                String matchText = "";
-                String matchText2 = "";
-                MatchCollection matches = rx.Matches(view);
-                MatchCollection matches2 = rx2.Matches(view);
-                if (matches.Count > 0)
+                string text = System.IO.File.ReadAllText(path_queries);
+                string[] queries = text.Split("________________________________________");
+                /*Initialisation parser*/
+                var parser = new TSql130Parser(false);
+                /*Stocke les erreurs liés à la lecture du parser*/
+                IList<ParseError> errors;
+                /*Iniatilisation*/
+                string text2 = System.IO.File.ReadAllText(path_script);
+                Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
+                string[] views = Regex.Split(text2, "________________________________________");
+                String sDir = @"F:\storage\sqlshare_data_release1\sqlshare_data_release1\data";
+                foreach (String view in views)
                 {
-                    matchText = matches[0].Groups[0].Value;
-                }
-                if (matches2.Count > 0)
-                {
-                    matchText2 = matches2[0].Groups[0].Value;
-                }
-                if (!PhysicalTableList.ContainsKey(matchText2))
-                {
-                    using (StreamWriter sw = File.AppendText(path_myf))
+                    Regex rx = new Regex(@"\(\[.*\]\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    Regex rx2 = new Regex(@"\[[^\[\]\(\)]*\]\.\[[^\[\]]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    // Find matches.
+                    String matchText = "";
+                    String matchText2 = "";
+                    MatchCollection matches = rx.Matches(view);
+                    MatchCollection matches2 = rx2.Matches(view);
+                    if (matches.Count > 0)
                     {
-
-                        sw.WriteLine(matchText2 + " " + matchText.Replace("(", "").Replace(")", ""));
-
+                        matchText = matches[0].Groups[0].Value;
                     }
-                    //Console.WriteLine("le match est : " + matchText.Replace("(", "").Replace(")", "") + ", pour la vue nommée : " + matchText2);
-                    PhysicalTableList.Add(matchText2, new List<String>(matchText.Replace("(", "").Replace(")", "").Split(',')));
-                }
-            }
-            try
-            {
-                string firstLine;
-                foreach (string d in Directory.GetDirectories(sDir))
-                {
-                    foreach (string f in Directory.GetFiles(d))
+                    if (matches2.Count > 0)
                     {
-                        using (StreamReader reader = new StreamReader(f))
+                        matchText2 = matches2[0].Groups[0].Value;
+                    }
+                    if (!PhysicalTableList.ContainsKey(matchText2))
+                    {
+                        using (StreamWriter sw = File.AppendText(path_myf))
                         {
-                            firstLine = reader.ReadLine() ?? "";
+
+                            sw.WriteLine(matchText2 + " " + matchText.Replace("(", "").Replace(")", ""));
+
                         }
-                        string[] listIdentifier = f.Split('\\');
-                        //Avant-dernière value du chemin de dossier pour récupérer le nom d'utilisateur
-                        int pos1 = listIdentifier.Count() - 2;
-                        //dernière value .. 
-                        int pos2 = listIdentifier.Count() - 1;
-                        //Console.WriteLine("[" + listIdentifier[pos1] + "].[" + listIdentifier[pos2] + "] = " + firstLine);
-                        PhysicalTableList.Add("[" + listIdentifier[pos1] + "].[" + listIdentifier[pos2] + "]", new List<String>(firstLine.Split(',')));
+                        //Console.WriteLine("le match est : " + matchText.Replace("(", "").Replace(")", "") + ", pour la vue nommée : " + matchText2);
+                        PhysicalTableList.Add(matchText2, new List<String>(matchText.Replace("(", "").Replace(")", "").Split(',')));
                     }
                 }
-            }
-            catch (System.Exception excpt)
-            {
-                Console.WriteLine(excpt.Message);
-            }
-            MyVisitor myvisitor = new MyVisitor();
-            VisitorCommonTable myVisitorCommonTable = new VisitorCommonTable();
-            myvisitor.PhysicalTableList = PhysicalTableList;
-            int i = 0;
-            foreach (String query in queries)
-            {
-                myVisitorCommonTable.id_requete_courante = i;
-                var fragment = parser.Parse(new StringReader(query), out errors);
-                fragment.Accept(myVisitorCommonTable);
-                i = i + 1;
-            }
-            myvisitor.dictTableWith = myVisitorCommonTable.dict;
+                try
+                {
+                    string firstLine;
+                    foreach (string d in Directory.GetDirectories(sDir))
+                    {
+                        foreach (string f in Directory.GetFiles(d))
+                        {
+                            using (StreamReader reader = new StreamReader(f))
+                            {
+                                firstLine = reader.ReadLine() ?? "";
+                            }
+                            string[] listIdentifier = f.Split('\\');
+                            //Avant-dernière value du chemin de dossier pour récupérer le nom d'utilisateur
+                            int pos1 = listIdentifier.Count() - 2;
+                            //dernière value .. 
+                            int pos2 = listIdentifier.Count() - 1;
+                            //Console.WriteLine("[" + listIdentifier[pos1] + "].[" + listIdentifier[pos2] + "] = " + firstLine);
+                            PhysicalTableList.Add("[" + listIdentifier[pos1] + "].[" + listIdentifier[pos2] + "]", new List<String>(firstLine.Split(',')));
+                        }
+                    }
+                }
+                catch (System.Exception excpt)
+                {
+                    Console.WriteLine(excpt.Message);
+                }
+                MyVisitor myvisitor = new MyVisitor();
+                VisitorCommonTable myVisitorCommonTable = new VisitorCommonTable();
+                myvisitor.PhysicalTableList = PhysicalTableList;
+                int i = 0;
+                foreach (String query in queries)
+                {
+                    myVisitorCommonTable.id_requete_courante = i;
+                    var fragment = parser.Parse(new StringReader(query), out errors);
+                    fragment.Accept(myVisitorCommonTable);
+                    i = i + 1;
+                }
+                myvisitor.dictTableWith = myVisitorCommonTable.dict;
 
-            i = 0;
-            /*Pour chaque requête présent dans le fichier, on l'analyse*/
-            foreach (var query in queries)
-            {
-                /*Sépare chaque query et leur résultat par "______________" pour le fichier de sorti*/
-                myvisitor.save(query, i.ToString());
-                //Console.WriteLine(Environment.NewLine+"_____________________________"+query);
-                /*Enregistre la query en cours*/
-                TSqlFragment fragment = parser.Parse(new StringReader(query), out errors);
-                fragment.Accept(myvisitor);
-                myvisitor.add();
-                i++;
-                Console.WriteLine(i);
+                i = 0;
+                /*Pour chaque requête présent dans le fichier, on l'analyse*/
+                foreach (var query in queries)
+                {
+                    /*Sépare chaque query et leur résultat par "______________" pour le fichier de sorti*/
+                    myvisitor.save(query, i.ToString());
+                    //Console.WriteLine(Environment.NewLine+"_____________________________"+query);
+                    /*Enregistre la query en cours*/
+                    TSqlFragment fragment = parser.Parse(new StringReader(query), out errors);
+                    fragment.Accept(myvisitor);
+                    myvisitor.add();
+                    i++;
+                    Console.WriteLine(i);
+                }
+                myvisitor.Imprime();
             }
-            myvisitor.Imprime();
+            else
+            {
+                PreTraitement preTraitement= new PreTraitement();
+                preTraitement.Process();
+            }
 
         }
     }
