@@ -13,15 +13,31 @@ public class PreTraitement
 {
     private List<string> projections;
     private List<string> fromClauses;
+    Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
+
     private string id;
     private string request;
     private int i = 0;
     readonly string path_file = @"C:\Users\Yann\Desktop\test.xml";
 
-    public PreTraitement()
+    public PreTraitement(Dictionary<String, List<String>> PhysicalTableList)
     {
         this.projections = new List<string>();
         this.fromClauses = new List<string>();
+        this.PhysicalTableList = PhysicalTableList;
+    }
+
+    public void Affiche()
+    {
+        foreach(KeyValuePair<String, List<String> > entry in PhysicalTableList)
+        {
+            Console.WriteLine(entry.Key);
+            foreach(string lol in entry.Value)
+            {
+                Console.WriteLine(lol);
+            }
+            Console.ReadLine();
+        }
     }
 
     public void Process()
@@ -60,14 +76,14 @@ public class PreTraitement
     public void Modify()
     {
         string tmp;
-        if (projections.Count == 0)
-            Console.WriteLine(++i);
-        else  if (fromClauses.Count == 0)
-            Console.WriteLine(++i);
+        if (projections.Count == 0) ;
+        // Console.WriteLine(++i);
+        else if (fromClauses.Count == 0) ;
+        // Console.WriteLine(++i);
 
         else if (fromClauses.Count == 1)
         {
-            Console.WriteLine(++i);
+            // Console.WriteLine(++i);
             foreach (string projection in this.projections)
             {
 
@@ -97,11 +113,11 @@ public class PreTraitement
                         // Console.WriteLine(projection);
                         string tempo = ReplaceIdentifier(request, identifier, projection);
                         Console.WriteLine();
-                      //  Console.ReadLine();
+                        //  Console.ReadLine();
                     }
                 }
-                else 
-                    Console.WriteLine("Heloise je t'aimais");
+                else
+                    Console.WriteLine(++i);
                 // Console.ReadLine();
             }
         }
@@ -187,11 +203,11 @@ public class PreTraitement
                             if (tmp.Equals(""))
                                 tmp = projection.ToLower();
                         }
-                       else if (tmp.Equals(""))
+                        else if (tmp.Equals(""))
                             tmp = projection;
                         tmp = tmp.Replace(identmp + ".", (new Regex(@"\] *[\w]+").Replace(result, "]")) + ".");
                         tmp = (new Regex(@"\s+")).Replace(tmp, "");
-                        Console.WriteLine(++i);
+                        //  Console.WriteLine(++i);
                         //  Console.WriteLine(projection + "Heloise");
                     }
                     //  
