@@ -54,18 +54,20 @@ public class PreTraitement
             }
             Console.ReadLine();
         }
-        catch (Exception e) { Console.WriteLine(e.Message); }
+        catch (Exception e) { Console.WriteLine(e.Message); Console.ReadLine(); }
     }
 
     public void Modify()
     {
         string tmp;
-        if (fromClauses.Count == 0)
-            // Console.WriteLine(++i); 
-            ;
+        if (projections.Count == 0)
+            Console.WriteLine(++i);
+        else  if (fromClauses.Count == 0)
+            Console.WriteLine(++i);
+
         else if (fromClauses.Count == 1)
         {
-            // Console.WriteLine(++i);
+            Console.WriteLine(++i);
             foreach (string projection in this.projections)
             {
 
@@ -81,14 +83,26 @@ public class PreTraitement
         }
         else
         {
-            if(request.ToLower().Contains("join "))
+            Console.WriteLine(request);
+            string identifier;
+
+            foreach (var projection in projections)
             {
-                Console.WriteLine(request);
-                foreach(var projection in projections)
+                identifier = HasIdentifier(projection);
+                if (identifier != "")
                 {
-                    Console.WriteLine(projection);
+
+                    if (!identifier.Equals(""))
+                    {
+                        // Console.WriteLine(projection);
+                        string tempo = ReplaceIdentifier(request, identifier, projection);
+                        Console.WriteLine();
+                      //  Console.ReadLine();
+                    }
                 }
-                Console.ReadLine();
+                else 
+                    Console.WriteLine("Heloise je t'aimais");
+                // Console.ReadLine();
             }
         }
 
@@ -113,19 +127,81 @@ public class PreTraitement
             test = "(" + test + ")";
 
         /*Si il y a un identifier on le supprime ex : t1.species => species*/
-        if (HasIdentifier(test))
+        if (HasIdentifier(test) != "")
             test = test.Substring(test.IndexOf('.') + 1, test.Length - test.IndexOf('.') - 1);
 
         /*On retourne la projection traitée*/
         return test;
     }
-    public Boolean HasIdentifier(string test)
+    public string HasIdentifier(string test)
     {
-        Regex regex = new Regex(@"^\w+\.\w+");
-        if (regex.Match(test).Success)
-            return true;
+        Regex regex = new Regex(@"^\w+\.\w+|^\w+\.\*|\+ \w+\.\w+");
+        Match match = regex.Match(test);
+        string tempo;
+        string results = "";
+        while (match.Success)
+        {
+            tempo = match.Value.Substring(match.Value.IndexOf('.') + 1, match.Value.Length - match.Value.IndexOf('.') - 1);
+            if (tempo.Length > 1 || tempo.Equals('*'))
+                if (!results.Contains(tempo.ToLower()))
+                    results += "|" + test.ToLower().Substring(0, test.IndexOf('.')).Replace("+", "");
+            test = test.Substring(0, match.Index) + " " + test.Substring(match.Index + match.Length, test.Length - match.Index - match.Length);
+            match = regex.Match(test);
+        }
+        if (!results.Equals(""))
+        {
+            results = (new Regex(@"\s+")).Replace(results, "");
+            results = results.Substring(results.IndexOf("|") + 1, results.Length - results.IndexOf("|") - 1);
+        }
+        return results;
+    }
 
-        return false;
+    public string ReplaceIdentifier(string request, string identifier, string projection)
+    {
+        Regex regex = new Regex(@"(from|join)[\s+]*\[[\w]+\].\[[\w+ .]*\] *\w+");
+        Match match = regex.Match(request.ToLower());
+        string results = "";
+        string tmp = "";
+        while (match.Success)
+        {
+            results += request.Substring(match.Index + 4, match.Length - 4) + "|";
+            request = request.Substring(0, match.Index) + Environment.NewLine + request.Substring(match.Index + match.Length, request.Length - match.Index - match.Length);
+            match = regex.Match(request.ToLower());
+        }
+        //Console.WriteLine(results);
+        foreach (string identi in identifier.Split('|'))
+        {
+            foreach (string result in results.Split('|'))
+            {
+
+                string identmp = (new Regex(@"\] *\w+")).Match(result).Value.Replace("]", "");
+                identmp = (new Regex(@"\s+")).Replace(identmp, "");
+                // Console.WriteLine(identmp);
+                if (identmp.ToLower().Equals(identi) && !result.Equals(""))
+                {
+                    if (result.Contains("]"))
+                    {
+                        if (identi.Length == 1)
+                        {
+                            identmp = identi;
+                            if (tmp.Equals(""))
+                                tmp = projection.ToLower();
+                        }
+                       else if (tmp.Equals(""))
+                            tmp = projection;
+                        tmp = tmp.Replace(identmp + ".", (new Regex(@"\] *[\w]+").Replace(result, "]")) + ".");
+                        tmp = (new Regex(@"\s+")).Replace(tmp, "");
+                        Console.WriteLine(++i);
+                        //  Console.WriteLine(projection + "Heloise");
+                    }
+                    //  
+                }
+            }
+        }
+        Console.WriteLine(tmp);
+        return tmp;
     }
 
 }
+
+
