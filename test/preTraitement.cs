@@ -29,10 +29,10 @@ public class PreTraitement
 
     public void Affiche()
     {
-        foreach(KeyValuePair<String, List<String> > entry in PhysicalTableList)
+        foreach (KeyValuePair<String, List<String>> entry in PhysicalTableList)
         {
             Console.WriteLine(entry.Key);
-            foreach(string lol in entry.Value)
+            foreach (string lol in entry.Value)
             {
                 Console.WriteLine(lol);
             }
@@ -66,15 +66,16 @@ public class PreTraitement
                 Modify();
                 projections.Clear();
                 fromClauses.Clear();
+                Console.ReadLine();
 
             }
-            Console.ReadLine();
         }
         catch (Exception e) { Console.WriteLine(e.Message); Console.ReadLine(); }
     }
 
     public void Modify()
     {
+        Console.WriteLine(request);
         string tmp;
         if (projections.Count == 0) ;
         // Console.WriteLine(++i);
@@ -86,20 +87,17 @@ public class PreTraitement
             // Console.WriteLine(++i);
             foreach (string projection in this.projections)
             {
-
                 if (!projection.Equals(""))
                 {
                     tmp = Improve(projection);
-
-                    //Console.WriteLine(fromClauses[0] + "." + tmp + Environment.NewLine);
-
+                    Console.WriteLine(fromClauses[0] + "." + tmp + Environment.NewLine);
                 }
             }
 
         }
         else
         {
-            Console.WriteLine(request);
+
             string identifier;
 
             foreach (var projection in projections)
@@ -112,16 +110,23 @@ public class PreTraitement
                     {
                         // Console.WriteLine(projection);
                         string tempo = ReplaceIdentifier(request, identifier, projection);
-                        Console.WriteLine();
-                        //  Console.ReadLine();
+                        Console.WriteLine(tempo);
                     }
                 }
-                else
-                    Console.WriteLine(++i);
-                // Console.ReadLine();
+                else if (!projection.ToLower().Contains("count(*)"))
+                {
+                    // Console.WriteLine(++i);
+                    foreach (string from in fromClauses)
+                    {
+                        RechercheDictionnaire(projection, from);
+                    }
+
+                }
+                
+                
             }
         }
-
+        
     }
 
     public string Improve(string test)
@@ -208,14 +213,34 @@ public class PreTraitement
                         tmp = tmp.Replace(identmp + ".", (new Regex(@"\] *[\w]+").Replace(result, "]")) + ".");
                         tmp = (new Regex(@"\s+")).Replace(tmp, "");
                         //  Console.WriteLine(++i);
-                        //  Console.WriteLine(projection + "Heloise");
+                        //  Console.WriteLine(projection );
                     }
                     //  
                 }
             }
         }
-        Console.WriteLine(tmp);
+       // Console.WriteLine(tmp);
         return tmp;
+    }
+
+    public string RechercheDictionnaire(string projection, string from)
+    {
+        string result = "";
+        List<string> tables;
+        Regex lol = new Regex(@"^[\s+]*");
+        from = lol.Replace(from, "");
+        //  Console.WriteLine("Heloise");
+        ///   Console.WriteLine(projection);
+        //   Console.WriteLine(from);
+        //  Console.ReadLine();
+        if (PhysicalTableList.TryGetValue(from, out tables))
+            foreach (string table in tables)
+            {
+                if (table != null)
+                    Console.WriteLine(table);
+                // Console.ReadLine();
+            }
+        return result;
     }
 
 }

@@ -16,7 +16,6 @@ namespace TransactSqlScriptDomTest
         static string path_queries = @"..\..\..\queries.txt";
         static string path_script = @"..\..\..\view_script.txt";
         static string path_myf = @"..\..\..\myf.txt";
-        static string lol;
 
         static Dictionary<String, List<String>> CreateDictionnary(string text2)
         {
@@ -187,7 +186,6 @@ namespace TransactSqlScriptDomTest
                 Dictionary<String, List<String>> PhysicalTableList = CreateDictionnary(text2);
                 Console.WriteLine("Fin création dictionnaire");
                 PreTraitement preTraitement = new PreTraitement(PhysicalTableList);
-                preTraitement.Affiche();
                 preTraitement.Process();
             }
 
