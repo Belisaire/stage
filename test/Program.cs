@@ -13,9 +13,9 @@ namespace TransactSqlScriptDomTest
 {
     class Program
     {
-        static string path_queries = @"..\..\..\queries.txt";
-        static string path_script = @"..\..\..\view_script.txt";
-        static string path_myf = @"..\..\..\myf.txt";
+        static string path_queries = @"..\..\..\Ressources\queries.txt";
+        static string path_script = @"..\..\..\Ressources\view_script.txt";
+        static string path_myf = @"..\..\..\Ressources\myf.txt";
 
         static Dictionary<String, List<String>> CreateDictionnary(string text2)
         {
