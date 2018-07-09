@@ -97,7 +97,6 @@ public class PreTraitement
         }
         else
         {
-
             string identifier;
 
             foreach (var projection in projections)
@@ -113,12 +112,12 @@ public class PreTraitement
                         Console.WriteLine(tempo);
                     }
                 }
-                else if (!projection.ToLower().Contains("count(*)"))
+                else if (projection.ToLower().Contains("count(*)"))
                 {
                     // Console.WriteLine(++i);
                     foreach (string from in fromClauses)
                     {
-                        RechercheDictionnaire(projection, from);
+                       
                     }
 
                 }
@@ -213,7 +212,7 @@ public class PreTraitement
                         tmp = tmp.Replace(identmp + ".", (new Regex(@"\] *[\w]+").Replace(result, "]")) + ".");
                         tmp = (new Regex(@"\s+")).Replace(tmp, "");
                         //  Console.WriteLine(++i);
-                        //  Console.WriteLine(projection );
+                        //  Console.WriteLine(projection);
                     }
                     //  
                 }
@@ -229,7 +228,6 @@ public class PreTraitement
         List<string> tables;
         Regex lol = new Regex(@"^[\s+]*");
         from = lol.Replace(from, "");
-        //  Console.WriteLine("Heloise");
         ///   Console.WriteLine(projection);
         //   Console.WriteLine(from);
         //  Console.ReadLine();
