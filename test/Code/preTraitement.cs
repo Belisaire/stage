@@ -18,6 +18,7 @@ public class PreTraitement
     private string id;
     private string request;
     private int i = 0;
+    private int j = 0;
     readonly string path_file = @"C:\Users\Yann\Desktop\test.xml";
 
     public PreTraitement(Dictionary<String, List<String>> PhysicalTableList)
@@ -36,6 +37,7 @@ public class PreTraitement
             {
                 Console.WriteLine(lol);
             }
+           
             Console.ReadLine();
         }
     }
@@ -66,9 +68,11 @@ public class PreTraitement
                 Modify();
                 projections.Clear();
                 fromClauses.Clear();
-                Console.ReadLine();
+                
 
             }
+            Console.WriteLine(j);
+            Console.ReadLine();
         }
         catch (Exception e) { Console.WriteLine(e.Message); Console.ReadLine(); }
     }
@@ -77,16 +81,17 @@ public class PreTraitement
     {
         Console.WriteLine(request);
         string tmp;
-        if (projections.Count == 0) ;
-        // Console.WriteLine(++i);
-        else if (fromClauses.Count == 0) ;
-        // Console.WriteLine(++i);
+        if (projections.Count == 0) 
+         Console.WriteLine(++i);
+        else if (fromClauses.Count == 0) 
+         Console.WriteLine(++i);
 
         else if (fromClauses.Count == 1)
         {
-            // Console.WriteLine(++i);
+             
             foreach (string projection in this.projections)
             {
+                Console.WriteLine(++i);
                 if (!projection.Equals(""))
                 {
                     tmp = Improve(projection);
@@ -114,11 +119,24 @@ public class PreTraitement
                 }
                 else if (projection.ToLower().Contains("count(*)"))
                 {
-                    // Console.WriteLine(++i);
+                    Console.WriteLine(++i);
+                    string allClause = "";
                     foreach (string from in fromClauses)
                     {
-                       
+                        allClause +='('+ (new Regex(@"^ *| *$|\r\n *")).Replace(Improve(from),"") + ").";
                     }
+                    tmp = allClause + Improve(projection);
+                    Console.WriteLine(tmp);
+                }
+                else
+                {
+                    if (projection.Contains("case "))
+                    {
+                       Console.WriteLine(projection);
+                       Console.ReadLine();
+                    }
+
+                    //Console.WriteLine(projection);
 
                 }
                 
@@ -133,7 +151,7 @@ public class PreTraitement
         /*si on trouve une projection du type : max(x) as y, on supprime le as y*/
 
         /*Permet de trouver le as y*/
-        Regex regex = new Regex(@" *as|AS [A-z0-9.,-]+");
+        Regex regex = new Regex(@" *(as|AS) +[\w.,-\[\]]+");
         /*supprime le as s'il existe*/
 
         if (regex.Match(test).Success)

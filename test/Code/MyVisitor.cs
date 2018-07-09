@@ -33,6 +33,7 @@ namespace TransactSqlScriptDomTest
         public int id_explo = 0;
         static string path_myfriend = @"..\..\..\myfriend.txt";
         static string path_explo = @"..\..\..\explo.txt";
+        static string path_test = @"..\..\..\..\..\..\test.xml";
         private string selection = "";
 
         /*In : fragment
@@ -496,7 +497,7 @@ namespace TransactSqlScriptDomTest
         /*Crée le fichier à partir de doc*/
         public void Imprime()
         {
-            doc.Save(@"C:\Users\Yann\Desktop\test.xml");
+            doc.Save(path_test);
         }
 
         /*Créer le fichier de sortie, et écrit le contenu de test*/

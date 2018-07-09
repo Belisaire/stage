@@ -16,15 +16,17 @@ namespace TransactSqlScriptDomTest
         static string path_queries = @"..\..\..\Ressources\queries.txt";
         static string path_script = @"..\..\..\Ressources\view_script.txt";
         static string path_myf = @"..\..\..\Ressources\myf.txt";
+        static string path_test = @"..\..\..\..\..\..\test.xml";
+        static string path_data = @"..\..\..\..\..\..\sqlshare_data_release1\sqlshare_data_release1\data";
 
         static Dictionary<String, List<String>> CreateDictionnary(string text2)
         {
             Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
             string[] views = Regex.Split(text2, "________________________________________");
-            String sDir = @"F:\storage\sqlshare_data_release1\sqlshare_data_release1\data";
+            String sDir = path_data;
+            Console.WriteLine("En cours ...");
             foreach (String view in views)
             {
-                Console.WriteLine("En cours ...");
                 Regex rx = new Regex(@"\(\[.*\]\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 Regex rx2 = new Regex(@"\[[^\[\]\(\)]*\]\.\[[^\[\]]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 // Find matches.
@@ -85,8 +87,9 @@ namespace TransactSqlScriptDomTest
         {
 
             /*Lire fichier*/
-            // File.Delete(@"C:\Users\Yann\Desktop\test.xml");
-            if (!File.Exists(path_script))
+            //File.Delete(@"C:\Users\Yann\Desktop\test.xml");
+            System.IO.File.ReadAllText(path_test);
+            if (!File.Exists(@"C:\Users\Yann\Desktop\test.xml"))
             {
                 string text = System.IO.File.ReadAllText(path_queries);
                 string[] queries = text.Split("________________________________________");
@@ -127,7 +130,6 @@ namespace TransactSqlScriptDomTest
             else
             {
 
-                /**/
                 string text2 = System.IO.File.ReadAllText(path_script);
                 Console.WriteLine("Création Dictionnaire...");
                 Dictionary<String, List<String>> PhysicalTableList = CreateDictionnary(text2);
