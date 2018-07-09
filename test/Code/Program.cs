@@ -127,7 +127,7 @@ namespace TransactSqlScriptDomTest
             else
             {
 
-                /**/
+                /*jesus fucking christ*/
                 string text2 = System.IO.File.ReadAllText(path_script);
                 Console.WriteLine("Création Dictionnaire...");
                 Dictionary<String, List<String>> PhysicalTableList = CreateDictionnary(text2);
