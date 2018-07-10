@@ -87,9 +87,8 @@ namespace TransactSqlScriptDomTest
         {
 
             /*Lire fichier*/
-            //File.Delete(@"C:\Users\Yann\Desktop\test.xml");
-            System.IO.File.ReadAllText(path_test);
-            if (!File.Exists(@"C:\Users\Yann\Desktop\test.xml"))
+           // File.Delete(path_test);
+            if (!File.Exists(path_test))
             {
                 string text = System.IO.File.ReadAllText(path_queries);
                 string[] queries = text.Split("________________________________________");

@@ -87,7 +87,7 @@ namespace TransactSqlScriptDomTest
             {
                 projectionList = new List<String>();
                 Regex rxUser = new Regex(@"\[[^\[\]\(\)]*\]\.\[[^\[\]\(\)]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                // Find matches.
+                // Find matches.//
                 //Console.WriteLine(this.PhysicalTableList["[1002].[Tokyo_0_merged.csv]"]);
                 MatchCollection matchesUser = rxUser.Matches(this.requete);
                 if (matchesUser.Count > 0)
@@ -500,6 +500,13 @@ namespace TransactSqlScriptDomTest
             doc.Save(path_test);
         }
 
+        public string SupprimeEspace(string test)
+        {
+            Regex espaceBlanc = new Regex(@"^[\s+]*|[\s+]*$");
+            test = espaceBlanc.Replace(test, "");
+            return test;
+        }
+
         /*Créer le fichier de sortie, et écrit le contenu de test*/
         public void ecrireFichier()
         {
@@ -516,7 +523,7 @@ namespace TransactSqlScriptDomTest
                 nouveau.AppendChild(noeud);
                 /*Ajout de la requête*/
                 noeud = doc.CreateElement("request");
-                noeud.InnerText = requete;
+                noeud.InnerText = SupprimeEspace(requete);
                 nouveau.AppendChild(noeud);
                 /*Pour chaque projection trouvvé, on crée un élément correspond*/
                 noeud = doc.CreateElement("projections");
@@ -536,7 +543,7 @@ namespace TransactSqlScriptDomTest
                         if (!select.Equals("") || !select.Equals(" "))
                         {
                             sousn = doc.CreateElement("selection");
-                            sousn.InnerText = select;
+                            sousn.InnerText = SupprimeEspace(select);
                             noeud.AppendChild(sousn);
 
                         }
@@ -551,7 +558,7 @@ namespace TransactSqlScriptDomTest
                     {
 
                         sousn = doc.CreateElement("aggregate");
-                        sousn.InnerText = agg;
+                        sousn.InnerText = SupprimeEspace(agg);
                         noeud.AppendChild(sousn);
                     }
                 }
@@ -563,7 +570,7 @@ namespace TransactSqlScriptDomTest
                     if (!from.Equals(""))
                     {
                         sousn = doc.CreateElement("from");
-                        sousn.InnerText = from;
+                        sousn.InnerText = SupprimeEspace(from);
                         noeud.AppendChild(sousn);
                     }
                 }

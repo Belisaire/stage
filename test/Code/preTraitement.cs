@@ -19,7 +19,7 @@ public class PreTraitement
     private string request;
     private int i = 0;
     private int j = 0;
-    readonly string path_file = @"C:\Users\Yann\Desktop\test.xml";
+    readonly string path_file = @"..\..\..\..\..\..\test.xml";
 
     public PreTraitement(Dictionary<String, List<String>> PhysicalTableList)
     {
@@ -128,13 +128,10 @@ public class PreTraitement
                     tmp = allClause + Improve(projection);
                     Console.WriteLine(tmp);
                 }
-                else
+                else if (request.Contains("UNION ") || request.Contains("union"))
                 {
-                    if (projection.Contains("case "))
-                    {
                        Console.WriteLine(projection);
                        Console.ReadLine();
-                    }
 
                     //Console.WriteLine(projection);
 
