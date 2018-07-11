@@ -14,6 +14,7 @@ public class PreTraitement
     private List<string> projections;
     private List<string> fromClauses;
     Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
+    private XmlDocument doc;
 
     private string id;
     private string request;
@@ -37,20 +38,26 @@ public class PreTraitement
             {
                 Console.WriteLine(lol);
             }
-           
+
             Console.ReadLine();
         }
     }
 
     public void Process()
     {
+        /*Chargement du fichier test crée plus hut*/
         XmlDocument xmldoc = new XmlDocument();
         xmldoc.Load(path_file);
+        /*On récupère les éléments requête*/
         XmlNodeList donnees = xmldoc.GetElementsByTagName("requête");
+        List<string> selection = new List<string>();
+        List<string> aggregates = new List<string>();
         try
         {
+            /*Pour chaque requête contenu dans donnees*/
             foreach (XmlNode data in donnees)
             {
+                /*On récupère */
                 XmlNode tmp = data.SelectSingleNode("fromClause");
                 if (tmp != null)
                     if (tmp.SelectNodes("from") != null)
@@ -61,41 +68,138 @@ public class PreTraitement
                     if (tmp.SelectNodes("from") != null)
                         foreach (XmlNode projection in tmp.SelectNodes("projection"))
                             this.projections.Add(projection.InnerText);
+                tmp = data.SelectSingleNode("aggregates");
+                if (tmp != null)
+                    if (tmp.SelectNodes("aggregates") != null)
+                        foreach (XmlNode projection in tmp.SelectNodes("aggregate"))
+                            aggregates.Add(projection.InnerText);
+                tmp = data.SelectSingleNode("selections");
+                if (tmp != null)
+                    if (tmp.SelectNodes("selections") != null)
+                        foreach (XmlNode projection in tmp.SelectNodes("selection"))
+                            selection.Add(projection.InnerText);
 
 
                 id = data.SelectSingleNode("id").InnerText;
                 request = data.SelectSingleNode("request").InnerText;
-                Modify();
+                string nouvelleProjection=Modify();
+                Ecrire(nouvelleProjection,fromClauses,request,id,selection, aggregates);
                 projections.Clear();
                 fromClauses.Clear();
-                
-
+                selection.Clear();
+                aggregates.Clear();
             }
-            Console.WriteLine(j);
-            Console.ReadLine();
+            doc.Save(@"..\..\..\..\..\..\traitement.xml");
         }
         catch (Exception e) { Console.WriteLine(e.Message); Console.ReadLine(); }
     }
 
-    public void Modify()
+    public void Ecrire(string projections, List<string> fromClauses, string requete, string id, List<string> selection, List<string>aggregate)
+    {
+        XmlElement nouveau = null;
+        XmlElement noeud = null;
+        XmlElement sousn = null;
+        try
+        {
+            if (doc == null)
+            {
+                doc = new XmlDocument();
+                XmlDeclaration dec = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
+                doc.AppendChild(dec);
+                XmlElement root = doc.CreateElement("requêtes");
+                doc.AppendChild(root);
+            }
+            /*On crée l'élément requête qui contiendra tout les éléments*/
+            nouveau = doc.CreateElement("requête");
+            /*Ajout de l'id*/
+            noeud = doc.CreateElement("id");
+            noeud.InnerText = id;
+            nouveau.AppendChild(noeud);
+            /*Ajout de la requête*/
+            noeud = doc.CreateElement("request");
+            noeud.InnerText = requete;
+            nouveau.AppendChild(noeud);
+            /*Pour chaque projection trouvvé, on crée un élément correspond*/
+            noeud = doc.CreateElement("projections");
+            foreach (var element in projections.Split("|"))
+            {
+                sousn = doc.CreateElement("projection");
+                sousn.InnerText = element;
+                noeud.AppendChild(sousn);
+            }
+            nouveau.AppendChild(noeud);
+            /*On crée un noeud "selections" qui contiendra toute les sélections trouvées*/
+            noeud = doc.CreateElement("selections");
+            if (!selection.Equals(""))
+                foreach (var select in selection)
+                {
+
+                    if (!select.Equals("") || !select.Equals(" "))
+                    {
+                        sousn = doc.CreateElement("selection");
+                        sousn.InnerText = select;
+                        noeud.AppendChild(sousn);
+
+                    }
+                }
+            /*Permet d'ajouter le sous-noeud au doc*/
+            nouveau.AppendChild(noeud);
+            /*même principe que pour projection*/
+            noeud = doc.CreateElement("aggregates");
+            foreach (var agg in aggregate)
+            {
+                if (!agg.Equals(""))
+                {
+
+                    sousn = doc.CreateElement("aggregate");
+                    sousn.InnerText = agg;
+                    noeud.AppendChild(sousn);
+                }
+            }
+            nouveau.AppendChild(noeud);
+            /*même principe que pour projection*/
+            noeud = doc.CreateElement("fromClause");
+            foreach (var from in fromClauses)
+            {
+                if (!from.Equals(""))
+                {
+                    sousn = doc.CreateElement("from");
+                    sousn.InnerText = from;
+                    noeud.AppendChild(sousn);
+                }
+            }
+            nouveau.AppendChild(noeud);
+            /*on ajoute le noeud requête en entier au doc*/
+            XmlElement el = (XmlElement)doc.SelectSingleNode("requêtes");
+            el.AppendChild(nouveau);
+        }
+
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+
+
+
+    public string Modify()
     {
         Console.WriteLine(request);
-        string tmp;
-        if (projections.Count == 0) 
-         Console.WriteLine(++i);
-        else if (fromClauses.Count == 0) 
-         Console.WriteLine(++i);
+        string tmp = "";
+        if (projections.Count == 0)
+            Console.WriteLine(++i);
+        else if (fromClauses.Count == 0)
+            Console.WriteLine(++i);
 
         else if (fromClauses.Count == 1)
         {
-             
+
             foreach (string projection in this.projections)
             {
                 Console.WriteLine(++i);
                 if (!projection.Equals(""))
                 {
-                    tmp = Improve(projection);
-                    Console.WriteLine(fromClauses[0] + "." + tmp + Environment.NewLine);
+                    tmp += "|" +fromClauses[0]+"."+ Improve(projection);
                 }
             }
 
@@ -113,8 +217,7 @@ public class PreTraitement
                     if (!identifier.Equals(""))
                     {
                         // Console.WriteLine(projection);
-                        string tempo = ReplaceIdentifier(request, identifier, projection);
-                        Console.WriteLine(tempo);
+                         tmp +="|" +ReplaceIdentifier(request, identifier, projection);
                     }
                 }
                 else if (projection.ToLower().Contains("count(*)"))
@@ -123,24 +226,32 @@ public class PreTraitement
                     string allClause = "";
                     foreach (string from in fromClauses)
                     {
-                        allClause +='('+ (new Regex(@"^ *| *$|\r\n *")).Replace(Improve(from),"") + ").";
+                        allClause += '(' + (new Regex(@"^ *| *$|\r\n *")).Replace(Improve(from), "") + ").";
                     }
-                    tmp = allClause + Improve(projection);
+                    tmp += "|" + allClause + Improve(projection);
                     Console.WriteLine(tmp);
                 }
                 else if (request.Contains("UNION ") || request.Contains("union"))
                 {
-                       Console.WriteLine(projection);
-                       Console.ReadLine();
 
-                    //Console.WriteLine(projection);
+
+
 
                 }
-                
-                
+                else if (projection.ToLower().Contains("case "))
+                {
+
+                }
+                else if(new Regex(@"\w*\(\w*(.[\w,';' ]*)?\)").Match(projection).Success)
+                {
+                    Console.WriteLine(projection);
+                    Console.ReadLine();
+                }
+
+
             }
         }
-        
+        return tmp.Substring(tmp.IndexOf("|")+1,tmp.Length-tmp.IndexOf("|")-1);
     }
 
     public string Improve(string test)
@@ -233,7 +344,7 @@ public class PreTraitement
                 }
             }
         }
-       // Console.WriteLine(tmp);
+        // Console.WriteLine(tmp);
         return tmp;
     }
 
