@@ -73,7 +73,7 @@ namespace TransactSqlScriptDomTest
                 havingClause = havingClause.Replace("\r\n", "");
                 Regex rgx = new Regex(@"\s+");
                 havingClause = rgx.Replace(havingClause, " ");
-                selection += "| " + havingClause;
+                selection += "|" + havingClause;
                 filtreHaving = havingClause;
             }
 
@@ -242,7 +242,7 @@ namespace TransactSqlScriptDomTest
             string study = GetNodeTokenText(node).ToLower();
 
             /*Inialisation de la regex pour trouver les sélections, tout ce qu'il y a après le "on" d'un join*/
-            Regex regex = new Regex(@"[(/r)\s+]+on[^A-z].*((\s+)*(substring\([A-z.,'\s+\(\)0-9]*\))|(\s+)*[A-z.0-9]*[\s+]*=[\s+]*[A-z_.0-9]*|(\s+)*[A-z.0-9]*[\s+]=[\s+]*\([A-z\s+0-9.=!\(\]]*\)|(\s+)*[A-z.(\s+)]*=[\s+]*\([A-z\s+0-9.\[\]=!><\(\),']*\)|((\s+)*(and|or).*)*)?");
+            Regex regex = new Regex(@"[(/r)\s+]+on[^A-z].*((\s+)*(substring\([A-z.,'\s+\(\)0-9]*\))|(\s+)*[A-z.0-9]*[\s+]*=[\s+]*[A-z_.0-9]*|(\s+)*[A-z.0-9]*[\s+]=[\s+]*\([A-z\s+0-9.=!\(\]]*\)|(\s+)*[A-z.(\s+)]*=[\s+]*\([A-z\s+0-9 .\[\]=!><\(\),']*\)|((\s+)*(and|or).*)*)?");
             Match match = regex.Match(study);
 
             /*Tant qu'on trouve une clause sélection à récupérer*/
@@ -347,7 +347,7 @@ namespace TransactSqlScriptDomTest
             else
             {
                 /*Regex pour récupérer les formes clauses*/
-                rgx = new Regex(@"from[\s+]*\[[0-9.A-z]*\].[\s+]*\[[A-z0-9. ,'-]*\]|from[\s+]*[A-z.0-9]+|join[\s+]+\[[A-z0-9]*\].\[[A-z0-9 .-]*\]|join[\s+]+[A-z.]*");
+                rgx = new Regex(@"from[\s+]*\[[0-9.A-z]*\].[\s+]*\[[A-z0-9. ,'-]*\]|from[\s+]*[A-z.0-9]+|join[\s+]+\[[A-z0-9]*\].\[[A-z0-9 .-]*\]|join[\s+]+[A-z.0-9]*");
                 // Console.WriteLine(from);
                 match = rgx.Match(from);
                 /*tant qu'il existe une forme clause à récupérer*/
@@ -360,7 +360,7 @@ namespace TransactSqlScriptDomTest
                     /*On regarde s'il existe une autre clause à récupérer*/
                     match = rgx.Match(from);
                     /*on supprime le from ou join*/
-                    tmp = (new Regex(@"(from |join[\s+]*)")).Replace(tmp, "");
+                    tmp = (new Regex(@"(from |join[\s+]+)")).Replace(tmp, "");
                     /*s'il y a plusieurs tables ex [896].[lol], [896].[xD]*/
                     if (!tmp.Equals("") && !fromClause.Contains(tmp) && !selection.Contains(tmp) && !filtreWith)
                         fromClause += " | " + tmp;
@@ -427,6 +427,14 @@ namespace TransactSqlScriptDomTest
                 selection += " | " + a;
                 pat = pat.Substring(0, match.Index) + " " + pat.Substring(match.Index + match.Length, pat.Length - (match.Index + match.Length));
             }
+            if ((new Regex(@"\[[\w. ]*(and |or )+[ \w.]*\]")).Match(pat).Success)
+            {
+                match = (new Regex(@"\[[\w. ]*(and|or)+[ \w.]*\]")).Match(pat);
+                string a = pat.Substring(match.Index, match.Length);
+                if (!selection.Contains(a))
+                    selection += "|" + a;
+                pat = pat.Substring(0, match.Index) + " " + pat.Substring(match.Index + match.Length, pat.Length - (match.Index + match.Length));
+            }
             /*On split sur or ou and*/
             sep = Regex.Split(pat, @" or | and ");
             string between = "";
@@ -452,7 +460,7 @@ namespace TransactSqlScriptDomTest
                 {
                     rgx = new Regex(@"\s+");
                     string tmp = rgx.Replace(binary, " ");
-                    if (!tmp.Equals(" ") && !tmp.Equals(" ) "))
+                    if (!tmp.Equals(" ") && !tmp.Equals(" ) ") && !selection.Contains(binary))
                         selection += " | " + binary;
                 }
                 /*Sinon, on ajoute la clause between ... and ... et on efface le contenu de between*/

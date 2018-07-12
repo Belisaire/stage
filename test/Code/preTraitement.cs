@@ -14,12 +14,14 @@ public class PreTraitement
     private List<string> projections;
     private List<string> fromClauses;
     Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
+    private XmlDocument doc;
 
     private string id;
     private string request;
     private int i = 0;
     private int j = 0;
     readonly string path_file = @"..\..\..\..\..\..\test.xml";
+    readonly string path_erreur = @"..\..\..\..\..\..\erreur.txt";
 
     public PreTraitement(Dictionary<String, List<String>> PhysicalTableList)
     {
@@ -37,20 +39,28 @@ public class PreTraitement
             {
                 Console.WriteLine(lol);
             }
-           
+
             Console.ReadLine();
         }
     }
 
     public void Process()
     {
+        if (File.Exists(path_erreur))
+            File.Delete(path_erreur);
+        /*Chargement du fichier test crée plus hut*/
         XmlDocument xmldoc = new XmlDocument();
         xmldoc.Load(path_file);
+        /*On récupère les éléments requête*/
         XmlNodeList donnees = xmldoc.GetElementsByTagName("requête");
+        List<string> selection = new List<string>();
+        List<string> aggregates = new List<string>();
         try
         {
+            /*Pour chaque requête contenu dans donnees*/
             foreach (XmlNode data in donnees)
             {
+                /*On récupère */
                 XmlNode tmp = data.SelectSingleNode("fromClause");
                 if (tmp != null)
                     if (tmp.SelectNodes("from") != null)
@@ -61,41 +71,138 @@ public class PreTraitement
                     if (tmp.SelectNodes("from") != null)
                         foreach (XmlNode projection in tmp.SelectNodes("projection"))
                             this.projections.Add(projection.InnerText);
+                tmp = data.SelectSingleNode("aggregates");
+                if (tmp != null)
+                    if (tmp.SelectNodes("aggregates") != null)
+                        foreach (XmlNode projection in tmp.SelectNodes("aggregate"))
+                            aggregates.Add(projection.InnerText);
+                tmp = data.SelectSingleNode("selections");
+                if (tmp != null)
+                    if (tmp.SelectNodes("selections") != null)
+                        foreach (XmlNode projection in tmp.SelectNodes("selection"))
+                            selection.Add(projection.InnerText);
 
 
                 id = data.SelectSingleNode("id").InnerText;
                 request = data.SelectSingleNode("request").InnerText;
-                Modify();
+                string nouvelleProjection = Modify();
+                Ecrire(nouvelleProjection, fromClauses, request, id, selection, aggregates);
                 projections.Clear();
                 fromClauses.Clear();
-                
+                selection.Clear();
+                aggregates.Clear();
+                if (nouvelleProjection.Equals(""))
+                    Erreur(request);
 
             }
-            Console.WriteLine(j);
-            Console.ReadLine();
+
+            doc.Save(@"..\..\..\..\..\..\traitement.xml");
         }
         catch (Exception e) { Console.WriteLine(e.Message); Console.ReadLine(); }
     }
+    public void Ecrire(string projections, List<string> fromClauses, string requete, string id, List<string> selection, List<string> aggregate)
+    {
+        XmlElement nouveau = null;
+        XmlElement noeud = null;
+        XmlElement sousn = null;
+        try
+        {
+            if (doc == null)
+            {
+                doc = new XmlDocument();
+                XmlDeclaration dec = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
+                doc.AppendChild(dec);
+                XmlElement root = doc.CreateElement("requêtes");
+                doc.AppendChild(root);
+            }
+            /*On crée l'élément requête qui contiendra tout les éléments*/
+            nouveau = doc.CreateElement("requête");
+            /*Ajout de l'id*/
+            noeud = doc.CreateElement("id");
+            noeud.InnerText = id;
+            nouveau.AppendChild(noeud);
+            /*Ajout de la requête*/
+            noeud = doc.CreateElement("request");
+            noeud.InnerText = requete;
+            nouveau.AppendChild(noeud);
+            /*Pour chaque projection trouvvé, on crée un élément correspond*/
+            noeud = doc.CreateElement("projections");
+            foreach (var element in projections.Split("|"))
+            {
+                sousn = doc.CreateElement("projection");
+                sousn.InnerText = element;
+                noeud.AppendChild(sousn);
+            }
+            nouveau.AppendChild(noeud);
+            /*On crée un noeud "selections" qui contiendra toute les sélections trouvées*/
+            noeud = doc.CreateElement("selections");
+            if (!selection.Equals(""))
+                foreach (var select in selection)
+                {
 
-    public void Modify()
+                    if (!select.Equals("") || !select.Equals(" "))
+                    {
+                        sousn = doc.CreateElement("selection");
+                        sousn.InnerText = select;
+                        noeud.AppendChild(sousn);
+
+                    }
+                }
+            /*Permet d'ajouter le sous-noeud au doc*/
+            nouveau.AppendChild(noeud);
+            /*même principe que pour projection*/
+            noeud = doc.CreateElement("aggregates");
+            foreach (var agg in aggregate)
+            {
+                if (!agg.Equals(""))
+                {
+
+                    sousn = doc.CreateElement("aggregate");
+                    sousn.InnerText = agg;
+                    noeud.AppendChild(sousn);
+                }
+            }
+            nouveau.AppendChild(noeud);
+            /*même principe que pour projection*/
+            noeud = doc.CreateElement("fromClause");
+            foreach (var from in fromClauses)
+            {
+                if (!from.Equals(""))
+                {
+                    sousn = doc.CreateElement("from");
+                    sousn.InnerText = from;
+                    noeud.AppendChild(sousn);
+                }
+            }
+            nouveau.AppendChild(noeud);
+            /*on ajoute le noeud requête en entier au doc*/
+            XmlElement el = (XmlElement)doc.SelectSingleNode("requêtes");
+            el.AppendChild(nouveau);
+        }
+
+        catch (Exception e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
+    public string Modify()
     {
         Console.WriteLine(request);
-        string tmp;
-        if (projections.Count == 0) 
-         Console.WriteLine(++i);
-        else if (fromClauses.Count == 0) 
-         Console.WriteLine(++i);
+        string tmp = "";
+        if (projections.Count == 0)
+            Console.WriteLine(++i);
+        else if (fromClauses.Count == 0)
+            Console.WriteLine(++i);
 
         else if (fromClauses.Count == 1)
         {
-             
+
             foreach (string projection in this.projections)
             {
                 Console.WriteLine(++i);
                 if (!projection.Equals(""))
                 {
-                    tmp = Improve(projection);
-                    Console.WriteLine(fromClauses[0] + "." + tmp + Environment.NewLine);
+                    tmp += "|" + fromClauses[0] + "." + Improve(projection);
                 }
             }
 
@@ -109,12 +216,11 @@ public class PreTraitement
                 identifier = HasIdentifier(projection);
                 if (identifier != "")
                 {
-
+                    ++i;
                     if (!identifier.Equals(""))
                     {
                         // Console.WriteLine(projection);
-                        string tempo = ReplaceIdentifier(request, identifier, projection);
-                        Console.WriteLine(tempo);
+                        tmp += "|" + ReplaceIdentifier(request, identifier, projection);
                     }
                 }
                 else if (projection.ToLower().Contains("count(*)"))
@@ -123,24 +229,75 @@ public class PreTraitement
                     string allClause = "";
                     foreach (string from in fromClauses)
                     {
-                        allClause +='('+ (new Regex(@"^ *| *$|\r\n *")).Replace(Improve(from),"") + ").";
+                        allClause += '(' + (new Regex(@"^ *| *$|\r\n *")).Replace(Improve(from), "") + ").";
+                        if (request.Contains("UNION") || request.Contains("union"))
+                            break;
                     }
-                    tmp = allClause + Improve(projection);
+                    tmp += "|" + allClause + Improve(projection);
                     Console.WriteLine(tmp);
                 }
                 else if (request.Contains("UNION ") || request.Contains("union"))
                 {
-                       Console.WriteLine(projection);
-                       Console.ReadLine();
-
-                    //Console.WriteLine(projection);
+                    ++i;
+                    tmp += "|" + fromClauses[0] + ".(" + projection + ")";
+                }
+                else if (projection.ToLower().Contains("case "))
+                {
+                    ++i;
+                    tmp += "|";
+                }
+                else if (new Regex(@"\w*\(\w*(.[\w,';' /]*)?\)").Match(projection).Success)
+                {
+                    foreach (var from in fromClauses)
+                    {
+                        ++i;
+                        tmp += '|' + from + '.' + '(' + projection + ')';
+                    }
 
                 }
-                
-                
+                else if (new Regex(@"\w*[+-/]\w*").Match(projection).Success)
+                {
+                    foreach (var from in fromClauses)
+                    {
+                        ++i;
+                        tmp += '|' + from + '.' + '(' + projection + ')';
+                    }
+                }
+                else
+                {
+                    foreach (string from in fromClauses)
+                    {
+                        if (RechercheDictionnaire(Improve(projection), from))
+                        {
+                            tmp += "|" + from + "." + Improve(projection);
+                            ++i;
+                        }
+                    }
+                }
+
+
+
             }
         }
-        
+        return tmp.Substring(tmp.IndexOf("|") + 1, tmp.Length - tmp.IndexOf("|") - 1);
+    }
+    public void Erreur(string request)
+    {
+
+        string text = "";
+        if (!File.Exists(path_erreur))
+        {
+            StreamWriter file = new StreamWriter(path_erreur);
+            file.Write("_______________________" + Environment.NewLine + request + Environment.NewLine);
+            file.Close();
+        }
+        else
+        {
+            text = System.IO.File.ReadAllText(path_erreur);
+            text += "_______________________" + Environment.NewLine + request + Environment.NewLine;
+            System.IO.File.WriteAllText(path_erreur, text);
+
+        }
     }
 
     public string Improve(string test)
@@ -233,13 +390,12 @@ public class PreTraitement
                 }
             }
         }
-       // Console.WriteLine(tmp);
+        // Console.WriteLine(tmp);
         return tmp;
     }
 
-    public string RechercheDictionnaire(string projection, string from)
+    public Boolean RechercheDictionnaire(string projection, string from)
     {
-        string result = "";
         List<string> tables;
         Regex lol = new Regex(@"^[\s+]*");
         from = lol.Replace(from, "");
@@ -250,12 +406,16 @@ public class PreTraitement
             foreach (string table in tables)
             {
                 if (table != null)
-                    Console.WriteLine(table);
-                // Console.ReadLine();
+                {
+                    if ((new Regex(@"\[|\]")).Replace(table, "").ToLower().Equals((new Regex(@"\[|\]")).Replace(projection.ToLower(), "")))
+                    {
+                        return true;
+
+                    }
+
+                }
+
             }
-        return result;
+        return false;
     }
-
 }
-
-

@@ -81,13 +81,11 @@ namespace TransactSqlScriptDomTest
             }
             return PhysicalTableList;
         }
-
-
         static void Main(string[] args)
         {
 
             /*Lire fichier*/
-           // File.Delete(path_test);
+            //File.Delete(path_test);
             if (!File.Exists(path_test))
             {
                 string text = System.IO.File.ReadAllText(path_queries);
@@ -126,16 +124,12 @@ namespace TransactSqlScriptDomTest
                 }
                 myvisitor.Imprime();
             }
-            else
-            {
-
-                string text2 = System.IO.File.ReadAllText(path_script);
-                Console.WriteLine("Création Dictionnaire...");
-                Dictionary<String, List<String>> PhysicalTableList = CreateDictionnary(text2);
-                Console.WriteLine("Fin création dictionnaire");
-                PreTraitement preTraitement = new PreTraitement(PhysicalTableList);
-                preTraitement.Process();
-            }
+            string text2 = System.IO.File.ReadAllText(path_script);
+            Console.WriteLine("Création Dictionnaire...");
+            Dictionary<String, List<String>> PhysicalTableList = CreateDictionnary(text2);
+            Console.WriteLine("Fin création dictionnaire");
+            PreTraitement preTraitement = new PreTraitement(PhysicalTableList);
+            preTraitement.Process();
 
         }
     }
