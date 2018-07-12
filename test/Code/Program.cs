@@ -21,10 +21,10 @@ namespace TransactSqlScriptDomTest
         {
             Dictionary<String, List<String>> PhysicalTableList = new Dictionary<String, List<String>>();
             string[] views = Regex.Split(text2, "________________________________________");
-            String sDir = @"F:\storage\sqlshare_data_release1\sqlshare_data_release1\data";
+            String sDir = @"C:\Users\wilou\Documents\stage_workspace\sqlshare_data_release1\data";
             foreach (String view in views)
             {
-                Console.WriteLine("En cours ...");
+                Console.WriteLine("Creation du dictionnaire des tables en cours ...");
                 Regex rx = new Regex(@"\(\[.*\]\)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 Regex rx2 = new Regex(@"\[[^\[\]\(\)]*\]\.\[[^\[\]]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 // Find matches.
@@ -85,8 +85,8 @@ namespace TransactSqlScriptDomTest
         {
 
             /*Lire fichier*/
-            // File.Delete(@"C:\Users\Yann\Desktop\test.xml");
-            if (!File.Exists(path_script))
+           //File.Delete(@"C:\Users\Yann\Desktop\test.xml");
+            if (!File.Exists(@"C:\Users\wilou\source\repos\SqlShareParsing\SqlShareParsing\ressources\fichier_abstraction\test.xml"))
             {
                 string text = System.IO.File.ReadAllText(path_queries);
                 string[] queries = text.Split("________________________________________");
@@ -123,6 +123,7 @@ namespace TransactSqlScriptDomTest
                     Console.WriteLine(i);
                 }
                 myvisitor.Imprime();
+                
             }
             else
             {

@@ -18,7 +18,7 @@ public class PreTraitement
     private string id;
     private string request;
     private int i = 0;
-    readonly string path_file = @"C:\Users\Yann\Desktop\test.xml";
+    readonly string path_file = @"C:\Users\wilou\source\repos\SqlShareParsing\SqlShareParsing\ressources\fichier_abstraction\test.xml";
 
     public PreTraitement(Dictionary<String, List<String>> PhysicalTableList)
     {
@@ -66,7 +66,7 @@ public class PreTraitement
                 Modify();
                 projections.Clear();
                 fromClauses.Clear();
-                Console.ReadLine();
+                //Console.ReadLine();
 
             }
         }

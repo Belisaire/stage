@@ -12,6 +12,7 @@ using System.Xml;
 
 namespace TransactSqlScriptDomTest
 {
+
     class MyVisitor : TSqlFragmentVisitor
     {
         Boolean filtreWith = false;
@@ -34,6 +35,7 @@ namespace TransactSqlScriptDomTest
         static string path_myfriend = @"..\..\..\myfriend.txt";
         static string path_explo = @"..\..\..\explo.txt";
         private string selection = "";
+        public List<String> TableReferenceTypeQualifiedJoin = new List<String>();
 
         /*In : fragment
          Out: String
@@ -114,47 +116,41 @@ namespace TransactSqlScriptDomTest
                                 {
                                     foreach (TSqlFragment fromElement in node.FromClause.TableReferences)
                                     {
+
                                         if (fromElement is NamedTableReference)
                                         {
                                             String namedTableReferenceText = GetNodeTokenText(fromElement);
-                                            if (this.dictTableWith.ContainsKey(this.id_requete_courante))
-                                            {
-                                                foreach (CommonTableExpression commonTableExpression in this.dictTableWith[this.id_requete_courante])
-                                                {
-                                                    if (commonTableExpression.ExpressionName.Value == namedTableReferenceText)
-                                                    {
-                                                        if (commonTableExpression.QueryExpression is QuerySpecification)
-                                                        {
-                                                            QuerySpecification queryUsedForTableDefinition = (QuerySpecification)commonTableExpression.QueryExpression;
-                                                            foreach (SelectElement selectElementInQueryUsedForTableDefinition in queryUsedForTableDefinition.SelectElements)
-                                                            {
-                                                                projectionList.Add(GetNodeTokenText(selectElementInQueryUsedForTableDefinition));
-                                                            }
-                                                        }
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
 
-                                                    }
-                                                }
-                                            }
-                                            else
+                                        }
+                                        if (fromElement is QualifiedJoin)
+                                        {
+                                            QualifiedJoin currQualifiedJoin = (QualifiedJoin)fromElement;
+                                            if (currQualifiedJoin.FirstTableReference is NamedTableReference && currQualifiedJoin.SecondTableReference is NamedTableReference)
                                             {
-                                                Regex rx = new Regex(@"\[.*\]\.\[.*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                                                // Find matches.
-                                                //Console.WriteLine(this.PhysicalTableList["[1002].[Tokyo_0_merged.csv]"]);
-                                                String matchText = "";
-                                                MatchCollection matches = rx.Matches(namedTableReferenceText);
-                                                if (matches.Count > 0)
-                                                {
-                                                    matchText = matches[0].Groups[0].Value;
-                                                }
-                                                if (this.PhysicalTableList.ContainsKey(matchText.ToLower()))
-                                                {
-                                                    foreach (String attribut in this.PhysicalTableList[matchText.ToLower()])
-                                                    {
-                                                        projectionList.Add(attribut);
-                                                    }
-                                                }
+                                                String namedTableReferenceText1 = GetNodeTokenText(currQualifiedJoin.FirstTableReference);
+                                                projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText1));
+
+                                                String namedTableReferenceText2 = GetNodeTokenText(currQualifiedJoin.SecondTableReference);
+                                                projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText2));
+                                            }
+
+
+                                        }
+                                        if (fromElement is PivotedTableReference)
+                                        {
+                                            PivotedTableReference currPivotedTable = (PivotedTableReference)fromElement;
+                                            if (currPivotedTable.TableReference is NamedTableReference)
+                                            {
+                                                String namedTableReferenceText = GetNodeTokenText(currPivotedTable.TableReference);
+                                                projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
 
                                             }
+                                        }
+                                        if (fromElement is QueryDerivedTable)
+                                        {
+                                            QueryDerivedTable currQueryDerivedTable = (QueryDerivedTable)fromElement;
+                                            this.Visit(currQueryDerivedTable.QueryExpression);
                                         }
                                     }
                                 }
@@ -166,10 +162,6 @@ namespace TransactSqlScriptDomTest
                     {
                         foreach (SelectElement selectElement in node.SelectElements)
                         {
-                            if (GetNodeTokenText(selectElement).Contains(','))
-                            {
-                                //  Console.WriteLine(GetNodeTokenText(selectElement));
-                            }
                             projectionList.Add(GetNodeTokenText(selectElement));
                         }
                     }
@@ -223,6 +215,74 @@ namespace TransactSqlScriptDomTest
             this.id_requete_precedante = this.id_requete_courante;
 
         }
+        private List<String> GetProjectionsFromTablesReference(String referenceTableName)
+        {
+            List<String> projectionListCurrentObject = new List<String>();
+            if (this.dictTableWith.ContainsKey(this.id_requete_courante))
+            {
+                foreach (CommonTableExpression commonTableExpression in this.dictTableWith[this.id_requete_courante])
+                {
+                    if (commonTableExpression.ExpressionName.Value == referenceTableName)
+                    {
+                        if (commonTableExpression.QueryExpression is QuerySpecification)
+                        {
+                            QuerySpecification queryUsedForTableDefinition = (QuerySpecification)commonTableExpression.QueryExpression;
+                            foreach (SelectElement selectElementInQueryUsedForTableDefinition in queryUsedForTableDefinition.SelectElements)
+                            {
+                                projectionList.Add(GetNodeTokenText(selectElementInQueryUsedForTableDefinition));
+                            }
+                        }
+
+                    }
+                }
+            }
+            else
+            {
+                Regex rx = new Regex(@"\[.*\]\.\[.*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                // Find matches.
+                //Console.WriteLine(this.PhysicalTableList["[1002].[Tokyo_0_merged.csv]"]);
+                String matchText = "";
+                MatchCollection matches = rx.Matches(referenceTableName);
+                if (matches.Count > 0)
+                {
+                    matchText = matches[0].Groups[0].Value;
+                    if (this.PhysicalTableList.ContainsKey(matchText.ToLower()))
+                    {
+                        foreach (String attribut in this.PhysicalTableList[matchText.ToLower()])
+                        {
+                            projectionList.Add(attribut);
+                        }
+                    }
+                }
+                else
+                {
+                    //Ce que je pense qu'il faille faire c'est de regarder si, telle quelle, la referencetable 
+                    //est égale à la valeur ici => [numero].[valeur]
+                    rx = new Regex(@"\[[^\[\]]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    matchText = "";
+                    matches = rx.Matches(referenceTableName);
+                    if (matches.Count == 1)
+                    {
+                        foreach (String value in this.PhysicalTableList.Keys)
+                        {
+                            matches = rx.Matches(value);
+                            if (matches.Count == 2)
+                            {
+                                matchText = matches[1].Groups[0].Value;
+                                if (referenceTableName.ToLower() == matchText.ToLower() || referenceTableName.ToLower() == matchText.ToLower().Replace("[", "").Replace("]", ""))
+                                {
+                                    foreach (String attribut in this.PhysicalTableList[value])
+                                    {
+                                        projectionList.Add(attribut);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return projectionListCurrentObject;
+        }
         public override void Visit(DeleteSpecification node)
         {
             WhereClause lol = node.WhereClause;
@@ -236,6 +296,7 @@ namespace TransactSqlScriptDomTest
         /*A chaque join trouvé dans la requête*/
         public override void Visit(QualifiedJoin node)
         {
+
             /*On récupére l'information en un string pour pouvoir effectuer des opérations dessus
              On enlève toutes les majuscules*/
             string study = GetNodeTokenText(node).ToLower();
@@ -263,6 +324,7 @@ namespace TransactSqlScriptDomTest
                 study = study.Substring(0, match.Index) + " " + study.Substring(match.Index + match.Length, study.Length - (match.Index + match.Length));
                 match = regex.Match(study);
             }
+
         }
         /*Recherche les aggregates*/
         public override void Visit(FunctionCall node)
@@ -310,10 +372,17 @@ namespace TransactSqlScriptDomTest
         }
 
 
+
         /*Extrait les FromClause*/
         public override void Visit(FromClause node)
         {
-
+            foreach (TSqlFragment fromElement in node.TableReferences)
+            {
+                if (!TableReferenceTypeQualifiedJoin.Contains(fromElement.GetType().ToString()))
+                {
+                    TableReferenceTypeQualifiedJoin.Add(fromElement.GetType().ToString());
+                }
+            }
             string from = GetNodeTokenText(node).ToLower();
             /*supprime les possibles commentaires*/
             Regex rgx = new Regex(@"--[A-z0-9\(\)\[\],._!=<>'\s+][^\r\n]*");
@@ -359,7 +428,7 @@ namespace TransactSqlScriptDomTest
                     /*On regarde s'il existe une autre clause à récupérer*/
                     match = rgx.Match(from);
                     /*on supprime le from ou join*/
-                    tmp = (new Regex(@"(from |join[\s+]*)")).Replace(tmp, "");
+                    tmp = (new Regex(@"(from |join[\s+]+)")).Replace(tmp, "");
                     /*s'il y a plusieurs tables ex [896].[lol], [896].[xD]*/
                     if (!tmp.Equals("") && !fromClause.Contains(tmp) && !selection.Contains(tmp) && !filtreWith)
                         fromClause += " | " + tmp;
@@ -496,7 +565,7 @@ namespace TransactSqlScriptDomTest
         /*Crée le fichier à partir de doc*/
         public void Imprime()
         {
-            doc.Save(@"C:\Users\Yann\Desktop\test.xml");
+            doc.Save(@"C:\Users\wilou\source\repos\SqlShareParsing\SqlShareParsing\ressources\fichier_abstraction\test.xml");
         }
 
         /*Créer le fichier de sortie, et écrit le contenu de test*/
