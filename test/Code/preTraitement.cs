@@ -430,7 +430,7 @@ public class PreTraitement
                         tmp = tmp.Replace(identmp + ".", (new Regex(@"\] *[\w]+").Replace(result, "]")) + ".");
                         tmp = (new Regex(@"\s+")).Replace(tmp, "");
                         //  Console.WriteLine(++i);
-                        //  Console.WriteLine(projection);
+                        //  Console.WriteLine(projection );
                     }
                     //  
                 }
@@ -445,6 +445,7 @@ public class PreTraitement
         List<string> tables;
         Regex lol = new Regex(@"^[\s+]*");
         from = lol.Replace(from, "");
+        //  Console.WriteLine("Heloise");
         ///   Console.WriteLine(projection);
         //   Console.WriteLine(from);
         //  Console.ReadLine();
