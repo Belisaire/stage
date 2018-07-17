@@ -48,71 +48,68 @@ public class PreTraitement
     {
         if (File.Exists(path_erreur))
             File.Delete(path_erreur);
+        if (File.Exists(@"..\..\..\..\..\..\traitement.xml"))
+            File.Delete(@"..\..\..\..\..\..\traitement.xml");
         /*Chargement du fichier test crée plus hut*/
         XmlDocument xmldoc = new XmlDocument();
         xmldoc.Load(path_file);
         /*On récupère les éléments requête*/
-        XmlNodeList donnees = xmldoc.GetElementsByTagName("requête");
+        XmlNodeList donnees = xmldoc.GetElementsByTagName("request");
         List<string> selection = new List<string>();
         List<string> aggregates = new List<string>();
-        try
+        /*Pour chaque requête contenu dans donnees*/
+        foreach (XmlNode data in donnees)
         {
-            /*Pour chaque requête contenu dans donnees*/
-            foreach (XmlNode data in donnees)
-            {
-                /*On récupère chaque information de chaque noeud
-                 Pour fromClause par exemple : on se positione au noeud fromClause, s'il n'est pas null, on recupére pour chaque sous noeud from les informations
-                 qu'on stocke dans la liste fromClauses*/
-                XmlNode tmp = data.SelectSingleNode("tables");
-                if (tmp != null)
-                    if (tmp.SelectNodes("table") != null)
-                        foreach (XmlNode from in tmp.SelectNodes("table"))
-                            this.fromClauses.Add(from.InnerText);
-                tmp = data.SelectSingleNode("projections");
-                if (tmp != null)
-                    if (tmp.SelectNodes("from") != null)
-                        foreach (XmlNode projection in tmp.SelectNodes("projection"))
-                            this.projections.Add(projection.InnerText);
-                tmp = data.SelectSingleNode("aggregates");
-                if (tmp != null)
-                    if (tmp.SelectNodes("aggregates") != null)
-                        foreach (XmlNode projection in tmp.SelectNodes("aggregate"))
-                            aggregates.Add(projection.InnerText);
-                tmp = data.SelectSingleNode("selections");
-                if (tmp != null)
-                    if (tmp.SelectNodes("selections") != null)
-                        foreach (XmlNode projection in tmp.SelectNodes("selection"))
-                            selection.Add(projection.InnerText);
+            /*On récupère chaque information de chaque noeud
+             Pour fromClause par exemple : on se positione au noeud fromClause, s'il n'est pas null, on recupére pour chaque sous noeud from les informations
+             qu'on stocke dans la liste fromClauses*/
+            XmlNode tmp = data.SelectSingleNode("tables");
+            if (tmp != null)
+                if (tmp.SelectNodes("table") != null)
+                    foreach (XmlNode from in tmp.SelectNodes("table"))
+                        this.fromClauses.Add(from.InnerText);
+            tmp = data.SelectSingleNode("projections");
+            if (tmp != null)
+                if (tmp.SelectNodes("from") != null)
+                    foreach (XmlNode projection in tmp.SelectNodes("projection"))
+                        this.projections.Add(projection.InnerText);
+            tmp = data.SelectSingleNode("function_aggregates");
+            if (tmp != null)
+                if (tmp.SelectNodes("aggregates") != null)
+                    foreach (XmlNode projection in tmp.SelectNodes("aggregate"))
+                        aggregates.Add(projection.InnerText);
+            tmp = data.SelectSingleNode("selections");
+            if (tmp != null)
+                if (tmp.SelectNodes("selections") != null)
+                    foreach (XmlNode projection in tmp.SelectNodes("selection"))
+                        selection.Add(projection.InnerText);
 
 
-                id = data.SelectSingleNode("id").InnerText;
-                request = data.SelectSingleNode("string_request").InnerText;
-                string nouvelleProjection = Modify();
-                Ecrire(nouvelleProjection, fromClauses, request, id, selection, aggregates);
-                /*on reset les lists*/
-                projections.Clear();
-                fromClauses.Clear();
-                selection.Clear();
-                aggregates.Clear();
-                /*si on a pas trouvé de nouvelle projection, on écrit la requete dans un fichier erreur*/
-                if (nouvelleProjection.Equals(""))
-                    Erreur(request);
+            id = data.SelectSingleNode("id").InnerText;
+            request = data.SelectSingleNode("string_request").InnerText;
+            string nouvelleProjection = Modify();
+            Ecrire(nouvelleProjection, fromClauses, request, id, selection, aggregates);
+            /*on reset les lists*/
+            projections.Clear();
+            fromClauses.Clear();
+            selection.Clear();
+            aggregates.Clear();
+            /*si on a pas trouvé de nouvelle projection, on écrit la requete dans un fichier erreur*/
+            if (nouvelleProjection.Equals(""))
+                Erreur(request);
 
-            }
-
-            doc.Save(@"..\..\..\..\..\..\traitement.xml");
         }
-        catch (Exception e) { Console.WriteLine(e.Message); Console.ReadLine(); }
+
+        doc.Save(@"..\..\..\..\..\..\traitement.xml");
     }
     public void Ecrire(string projections, List<string> fromClauses, string requete, string id, List<string> selection, List<string> aggregate)
     {
         XmlElement nouveau = null;
         XmlElement noeud = null;
         XmlElement sousn = null;
-        try
-        {
             if (doc == null)
             {
+                Console.WriteLine("lol");
                 doc = new XmlDocument();
                 XmlDeclaration dec = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
                 doc.AppendChild(dec);
@@ -130,10 +127,10 @@ public class PreTraitement
             noeud.InnerText = requete;
             nouveau.AppendChild(noeud);
             /*Pour chaque projection trouvvé, on crée un élément correspond*/
-            noeud = doc.CreateElement("projections");
+            noeud = doc.CreateElement("tables");
             foreach (var element in projections.Split("|"))
             {
-                sousn = doc.CreateElement("projection");
+                sousn = doc.CreateElement("table");
                 sousn.InnerText = element;
                 noeud.AppendChild(sousn);
             }
@@ -155,13 +152,13 @@ public class PreTraitement
             /*Permet d'ajouter le sous-noeud au doc*/
             nouveau.AppendChild(noeud);
             /*même principe que pour projection*/
-            noeud = doc.CreateElement("aggregates");
+            noeud = doc.CreateElement("function_aggregates");
             foreach (var agg in aggregate)
             {
                 if (!agg.Equals(""))
                 {
 
-                    sousn = doc.CreateElement("aggregate");
+                    sousn = doc.CreateElement("function_aggregate");
                     sousn.InnerText = agg;
                     noeud.AppendChild(sousn);
                 }
@@ -180,14 +177,10 @@ public class PreTraitement
             }
             nouveau.AppendChild(noeud);
             /*on ajoute le noeud requête en entier au doc*/
-            XmlElement el = (XmlElement)doc.SelectSingleNode("request");
+            XmlElement el = (XmlElement)doc.SelectSingleNode("requests");
             el.AppendChild(nouveau);
-        }
 
-        catch (Exception e)
-        {
-            throw new Exception(e.Message);
-        }
+
     }
     /*Cherche et retourne la ou les projections modifiées selon les cas de figure*/
     public string Modify()
@@ -227,9 +220,9 @@ public class PreTraitement
                 /*s'il on trouve des identifiers*/
                 if (identifier != "")
                 {
-                        // Console.WriteLine(projection);
-                        /*On appelle la fonction replaceIdentifier, qui va cherche les identifiers et les remplacer par la table*/
-                        tmp += "|" + ReplaceIdentifier(request, identifier, projection);
+                    // Console.WriteLine(projection);
+                    /*On appelle la fonction replaceIdentifier, qui va cherche les identifiers et les remplacer par la table*/
+                    tmp += "|" + ReplaceIdentifier(request, identifier, projection);
                 }
                 /*si la projection est un count(*), on rajoute toute les tables devant le count*/
                 else if (projection.ToLower().Contains("count(*)"))
@@ -259,7 +252,7 @@ public class PreTraitement
                 else if (projection.ToLower().Contains("case "))
                 {
                     ++i;
-                    tmp += "|"+fromClauses[0]+"("+projection+')';
+                    tmp += "|" + fromClauses[0] + "(" + projection + ')';
                 }
                 /*si la projection est une fonction de type replace ... etc*/
                 else if (new Regex(@"\w*\(\w*(.[\w,';' /]*)?\)").Match(projection).Success)
@@ -424,7 +417,7 @@ public class PreTraitement
                             if (tmp.Equals(""))
                                 tmp = projection.ToLower();
                         }
-                        
+
                         else if (tmp.Equals(""))
                             tmp = projection;
                         tmp = tmp.Replace(identmp + ".", (new Regex(@"\] *[\w]+").Replace(result, "]")) + ".");

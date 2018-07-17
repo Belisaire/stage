@@ -386,7 +386,7 @@ namespace TransactSqlScriptDomTest
             filtreWith = true;
             string fromWith = GetNodeTokenText(node).ToLower();
             /*On récupère la clause qui nous intéresse*/
-            Regex regex = new Regex(@"(from[\s+]*(\[[A-z.0-9]*\].\[[A-z.0-9]*.*\][ ]*[A-z0-9]*)([\s+]*,[ ]*\[[0-9A-z.]*\].\[[A-z0-9.]*\][ ]*[A-z0-9]*)?|join[\s+]*\[[A-z .0-9]*\][ ]*[A-z0-9]*|join[\s+]+[\[\]A-z0-9.]*|from[/s+]*[A-z0-9]*\.[A-z0-9]*|from[\s+]*[A-z ]*[ ]*[A-z0-9]|from[\s+]\[[A-z.0-9 ]*\][ ]*[A-z0-9]*)");
+            Regex regex = new Regex(@"(from[\s+]*\[[0-9.A-z]*\].[\s+]*\[[A-z0-9. ,'-]*\]|from[\s+]*[A-z.0-9- ]+|join[\s+]+\[[A-z0-9\-]*\].\[[A-z0-9 .-]*\]|join[\s+]+[A-z.0-9\- ]*)");
             Match match = regex.Match(fromWith);
             fromClause = "";
             /*Tant qu'il y a des from qui nous intéresse*/
