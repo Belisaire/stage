@@ -97,7 +97,7 @@ namespace TransactSqlScriptDomTest
                     this.user_courant = matchTexte.Split('.')[0].Replace("[", "").Replace("]", "");
 
                 }
-
+                //Jesus christ
                 recursifRecuperationProjection(node);
 
                 ProjectionListPerQuery.Add(this.id_requete_courante, projectionList);
