@@ -242,7 +242,7 @@ namespace TransactSqlScriptDomTest
             string study = GetNodeTokenText(node).ToLower();
 
             /*Inialisation de la regex pour trouver les sélections, tout ce qu'il y a après le "on" d'un join*/
-            Regex regex = new Regex(@"[(/r)\s+]+on[^A-z].*((\s+)*(substring\([A-z.,'\s+\(\)0-9]*\))|(\s+)*[A-z.0-9]*[\s+]*=[\s+]*[A-z_.0-9]*|(\s+)*[A-z.0-9]*[\s+]=[\s+]*\([A-z\s+0-9.=!\(\]]*\)|(\s+)*[A-z.(\s+)]*=[\s+]*\([A-z\s+0-9 .\[\]=!><\(\),']*\)|((\s+)*(and|or).*)*)?");
+            Regex regex = new Regex(@"[(/r)|\s+]+on[^A-z].*((\s+)*(substring\([A-z.,'\s+\(\)0-9]*\))|(\s+)*[A-z.0-9]*[\s+]*=[\s+]*[A-z_.0-9]*|(\s+)*[A-z.0-9]*[\s+]=[\s+]*\([A-z\s+0-9.=!\(\]]*\)|(\s+)*[A-z.(\s+)]*=[\s+]*\([A-z\s+0-9 .\[\]=!><\(\),']*\)|((\s+)*(and|or).*)*)?");
             Match match = regex.Match(study);
 
             /*Tant qu'on trouve une clause sélection à récupérer*/
@@ -347,7 +347,7 @@ namespace TransactSqlScriptDomTest
             else
             {
                 /*Regex pour récupérer les formes clauses*/
-                rgx = new Regex(@"from[\s+]*\[[0-9.A-z]*\].[\s+]*\[[A-z0-9. ,'-]*\]|from[\s+]*[A-z.0-9]+|join[\s+]+\[[A-z0-9]*\].\[[A-z0-9 .-]*\]|join[\s+]+[A-z.0-9]*");
+                rgx = new Regex(@"from[\s+]*\[[0-9.A-z]*\].[\s+]*\[[A-z0-9. ,'-]*\]|from[\s+]*[A-z.0-9- ]+|join[\s+]+\[[A-z0-9\-]*\].\[[A-z0-9 .-]*\]|join[\s+]+[A-z.0-9\- ]*");
                 // Console.WriteLine(from);
                 match = rgx.Match(from);
                 /*tant qu'il existe une forme clause à récupérer*/
@@ -405,7 +405,7 @@ namespace TransactSqlScriptDomTest
             }
             /*Fin Pré-Traitement*/
             /*On recherche les cas où les or et and sont dans les parenthèses si on en trouve on l'extrait de la chaine*/
-            rgx = new Regex(@"[(][a-z0-9\s+=<>\[\]!'_.]*( or | and )[\(a-z0-9\s+=<>\[\]!'_.&\|]*[)]");
+            rgx = new Regex(@"\([\(\w\s+=<>\[\]!'_.\)]*( or | and )[\(\w\s+=<>\[\]!'_.&\|]*\)");
             match = rgx.Match(pat);
             if (match.Success)
             {
@@ -430,44 +430,45 @@ namespace TransactSqlScriptDomTest
             if ((new Regex(@"\[[\w. ]*(and |or )+[ \w.]*\]")).Match(pat).Success)
             {
                 match = (new Regex(@"\[[\w. ]*(and|or)+[ \w.]*\]")).Match(pat);
-                string a = pat.Substring(match.Index, match.Length);
-                if (!selection.Contains(a))
-                    selection += "|" + a;
-                pat = pat.Substring(0, match.Index) + " " + pat.Substring(match.Index + match.Length, pat.Length - (match.Index + match.Length));
+                if (!selection.Contains(pat.Substring(pat.IndexOf("on ") + 2, pat.Length - pat.IndexOf("on ") - 2)))
+                    selection += "|" + pat.Substring(pat.IndexOf("on ") + 2, pat.Length - pat.IndexOf("on ") - 2);
             }
-            /*On split sur or ou and*/
-            sep = Regex.Split(pat, @" or | and ");
-            string between = "";
-            /*Pour chaque clause séparée par or ou and*/
-            foreach (var binary in sep)
+            else
             {
-                /*Si elle contient un between, on retraite le string pour avoir la clause d'origine sans changements*/
-                if (binary.Contains("between"))
+                /*On split sur or ou and*/
+                sep = Regex.Split(pat, @" or | and ");
+                string between = "";
+                /*Pour chaque clause séparée par or ou and*/
+                foreach (var binary in sep)
                 {
-                    between = binary.Replace("between", " between ");
-                    Regex number = new Regex(@"[0-9.]+and[0-9.]+");
-                    Match number2 = number.Match(between);
-                    if (number2.Success)
+                    /*Si elle contient un between, on retraite le string pour avoir la clause d'origine sans changements*/
+                    if (binary.Contains("between"))
                     {
-                        string tmp = number2.Value;
-                        tmp = tmp.Replace("and", " and ");
-                        /*Et on la stocke dans between*/
-                        between = number.Replace(binary, tmp);
+                        between = binary.Replace("between", " between ");
+                        Regex number = new Regex(@"[0-9.]+and[0-9.]+");
+                        Match number2 = number.Match(between);
+                        if (number2.Success)
+                        {
+                            string tmp = number2.Value;
+                            tmp = tmp.Replace("and", " and ");
+                            /*Et on la stocke dans between*/
+                            between = number.Replace(binary, tmp);
+                        }
                     }
-                }
-                /*Si between est null, =>aucune forme between ... and ... on ajoute les clauses sélections dans sélections*/
-                if (between.Equals(""))
-                {
-                    rgx = new Regex(@"\s+");
-                    string tmp = rgx.Replace(binary, " ");
-                    if (!tmp.Equals(" ") && !tmp.Equals(" ) ") && !selection.Contains(binary))
-                        selection += " | " + binary;
-                }
-                /*Sinon, on ajoute la clause between ... and ... et on efface le contenu de between*/
-                else
-                {
-                    selection += " | " + between;
-                    between = "";
+                    /*Si between est null, =>aucune forme between ... and ... on ajoute les clauses sélections dans sélections*/
+                    if (between.Equals(""))
+                    {
+                        rgx = new Regex(@"\s+");
+                        string tmp = rgx.Replace(binary, " ");
+                        if (!tmp.Equals(" ") && !tmp.Equals(" ) ") && !selection.Contains(binary))
+                            selection += " | " + binary;
+                    }
+                    /*Sinon, on ajoute la clause between ... and ... et on efface le contenu de between*/
+                    else
+                    {
+                        selection += " | " + between;
+                        between = "";
+                    }
                 }
             }
 
@@ -483,7 +484,7 @@ namespace TransactSqlScriptDomTest
                 doc = new XmlDocument();
                 XmlDeclaration dec = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
                 doc.AppendChild(dec);
-                XmlElement root = doc.CreateElement("requêtes");
+                XmlElement root = doc.CreateElement("requests");
                 doc.AppendChild(root);
             }
             /*On supprime le premier | pour éviter de créer des noeuds vides*/
@@ -524,13 +525,13 @@ namespace TransactSqlScriptDomTest
             try
             {
                 /*On crée l'élément requête qui contiendra tout les éléments*/
-                nouveau = doc.CreateElement("requête");
+                nouveau = doc.CreateElement("request");
                 /*Ajout de l'id*/
                 noeud = doc.CreateElement("id");
                 noeud.InnerText = id;
                 nouveau.AppendChild(noeud);
                 /*Ajout de la requête*/
-                noeud = doc.CreateElement("request");
+                noeud = doc.CreateElement("string_request");
                 noeud.InnerText = SupprimeEspace(requete);
                 nouveau.AppendChild(noeud);
                 /*Pour chaque projection trouvvé, on crée un élément correspond*/
@@ -553,38 +554,36 @@ namespace TransactSqlScriptDomTest
                             sousn = doc.CreateElement("selection");
                             sousn.InnerText = SupprimeEspace(select);
                             noeud.AppendChild(sousn);
-
                         }
                     }
                 /*Permet d'ajouter le sous-noeud au doc*/
                 nouveau.AppendChild(noeud);
                 /*même principe que pour projection*/
-                noeud = doc.CreateElement("aggregates");
+                noeud = doc.CreateElement("function_aggregates");
                 foreach (var agg in aggregate.Split("|"))
                 {
                     if (!agg.Equals(""))
                     {
-
-                        sousn = doc.CreateElement("aggregate");
+                        sousn = doc.CreateElement("function_aggregate");
                         sousn.InnerText = SupprimeEspace(agg);
                         noeud.AppendChild(sousn);
                     }
                 }
                 nouveau.AppendChild(noeud);
                 /*même principe que pour projection*/
-                noeud = doc.CreateElement("fromClause");
+                noeud = doc.CreateElement("tables");
                 foreach (var from in fromClause.Split("|"))
                 {
                     if (!from.Equals(""))
                     {
-                        sousn = doc.CreateElement("from");
+                        sousn = doc.CreateElement("table");
                         sousn.InnerText = SupprimeEspace(from);
                         noeud.AppendChild(sousn);
                     }
                 }
                 nouveau.AppendChild(noeud);
                 /*on ajoute le noeud requête en entier au doc*/
-                XmlElement el = (XmlElement)doc.SelectSingleNode("requêtes");
+                XmlElement el = (XmlElement)doc.SelectSingleNode("requests");
                 el.AppendChild(nouveau);
 
             }
