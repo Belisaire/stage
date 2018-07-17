@@ -85,7 +85,7 @@ namespace TransactSqlScriptDomTest
         {
 
             /*Lire fichier*/
-            File.Delete(path_test);
+          //  File.Delete(path_test);
             if (!File.Exists(path_test))
             {
                 string text = System.IO.File.ReadAllText(path_queries);
