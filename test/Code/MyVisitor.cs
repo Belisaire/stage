@@ -82,7 +82,7 @@ namespace TransactSqlScriptDomTest
             id_requete_courante = Int32.Parse(this.id);
             node.ToString();
 
-            bool starExpression = false;
+            //bool starExpression = false;
 
             if (this.id_requete_courante != this.id_requete_precedante)
             {
@@ -97,75 +97,8 @@ namespace TransactSqlScriptDomTest
                     this.user_courant = matchTexte.Split('.')[0].Replace("[", "").Replace("]", "");
 
                 }
-                if (node.SelectElements != null)
-                {
-                    foreach (TSqlFragment selectElement in node.SelectElements)
-                    {
-                        if (selectElement is SelectStarExpression)
-                        {
-                            starExpression = true;
-                            if (node.SelectElements.Count > 1)
-                            {
-                                //Lever une exception qui dit que c'est non géré*
 
-                                break;
-                            }
-                            else
-                            {
-                                if (node.FromClause != null)
-                                {
-                                    foreach (TSqlFragment fromElement in node.FromClause.TableReferences)
-                                    {
-
-                                        if (fromElement is NamedTableReference)
-                                        {
-                                            String namedTableReferenceText = GetNodeTokenText(fromElement);
-                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
-
-                                        }
-                                        if (fromElement is QualifiedJoin)
-                                        {
-                                            QualifiedJoin currQualifiedJoin = (QualifiedJoin)fromElement;
-                                            if (currQualifiedJoin.FirstTableReference is NamedTableReference && currQualifiedJoin.SecondTableReference is NamedTableReference)
-                                            {
-                                                String namedTableReferenceText1 = GetNodeTokenText(currQualifiedJoin.FirstTableReference);
-                                                projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText1));
-
-                                                String namedTableReferenceText2 = GetNodeTokenText(currQualifiedJoin.SecondTableReference);
-                                                projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText2));
-                                            }
-
-
-                                        }
-                                        if (fromElement is PivotedTableReference)
-                                        {
-                                            PivotedTableReference currPivotedTable = (PivotedTableReference)fromElement;
-                                            if (currPivotedTable.TableReference is NamedTableReference)
-                                            {
-                                                String namedTableReferenceText = GetNodeTokenText(currPivotedTable.TableReference);
-                                                projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
-
-                                            }
-                                        }
-                                        if (fromElement is QueryDerivedTable)
-                                        {
-                                            QueryDerivedTable currQueryDerivedTable = (QueryDerivedTable)fromElement;
-                                            this.Visit(currQueryDerivedTable.QueryExpression);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    }
-                    if (starExpression == false)
-                    {
-                        foreach (SelectElement selectElement in node.SelectElements)
-                        {
-                            projectionList.Add(GetNodeTokenText(selectElement));
-                        }
-                    }
-                }
+                recursifRecuperationProjection(node);
 
                 ProjectionListPerQuery.Add(this.id_requete_courante, projectionList);
                 int nombreProjectionsCommunes = 0;
@@ -246,11 +179,21 @@ namespace TransactSqlScriptDomTest
                 if (matches.Count > 0)
                 {
                     matchText = matches[0].Groups[0].Value;
-                    if (this.PhysicalTableList.ContainsKey(matchText.ToLower()))
+                    if (this.PhysicalTableList.ContainsKey(matchText.ToLower()) || this.PhysicalTableList.ContainsKey(matchText))
                     {
-                        foreach (String attribut in this.PhysicalTableList[matchText.ToLower()])
+                        if (this.PhysicalTableList.ContainsKey(matchText.ToLower()))
                         {
-                            projectionList.Add(attribut);
+                            foreach (String attribut in this.PhysicalTableList[matchText.ToLower()])
+                            {
+                                projectionList.Add(attribut);
+                            }
+                        }
+                        if (this.PhysicalTableList.ContainsKey(matchText))
+                        {
+                            foreach (String attribut in this.PhysicalTableList[matchText])
+                            {
+                                projectionList.Add(attribut);
+                            }
                         }
                     }
                 }
@@ -282,6 +225,100 @@ namespace TransactSqlScriptDomTest
                 }
             }
             return projectionListCurrentObject;
+        }
+        private void recursifRecuperationProjection(QuerySpecification node)
+        {
+            bool starExpression = false;
+            if (node.SelectElements != null)
+            {
+                foreach (TSqlFragment selectElement in node.SelectElements)
+                {
+                    if (selectElement is SelectStarExpression)
+                    {
+                        starExpression = true;
+                        if (node.SelectElements.Count > 1)
+                        {
+                            //Lever une exception qui dit que c'est non géré*
+
+                            break;
+                        }
+                        else
+                        {
+                            if (node.FromClause != null)
+                            {
+                                foreach (TSqlFragment fromElement in node.FromClause.TableReferences)
+                                {
+
+                                    if (fromElement is NamedTableReference)
+                                    {
+                                        String namedTableReferenceText = GetNodeTokenText(fromElement);
+                                        projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
+
+                                    }
+                                    if (fromElement is QualifiedJoin)
+                                    {
+                                        QualifiedJoin currQualifiedJoin = (QualifiedJoin)fromElement;
+                                        if (currQualifiedJoin.FirstTableReference is NamedTableReference && currQualifiedJoin.SecondTableReference is NamedTableReference)
+                                        {
+                                            String namedTableReferenceText1 = GetNodeTokenText(currQualifiedJoin.FirstTableReference);
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText1));
+
+                                            String namedTableReferenceText2 = GetNodeTokenText(currQualifiedJoin.SecondTableReference);
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText2));
+                                        }
+
+
+                                    }
+                                    if (fromElement is PivotedTableReference)
+                                    {
+                                        PivotedTableReference currPivotedTable = (PivotedTableReference)fromElement;
+                                        if (currPivotedTable.TableReference is NamedTableReference)
+                                        {
+                                            String namedTableReferenceText = GetNodeTokenText(currPivotedTable.TableReference);
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
+
+                                        }
+                                    }
+                                    if (fromElement is QueryDerivedTable)
+                                    {
+                                        QueryDerivedTable currQueryDerivedTable = (QueryDerivedTable)fromElement;
+                                        if (currQueryDerivedTable.QueryExpression is QuerySpecification)
+                                        {
+                                            QuerySpecification currQuerySpecification = (QuerySpecification)currQueryDerivedTable.QueryExpression;
+                                            recursifRecuperationProjection(currQuerySpecification);
+                                        }
+                                        if (currQueryDerivedTable.QueryExpression is BinaryQueryExpression)
+                                        {
+                                            //BinaryQueryExpression représente un union entre deux requête donc si on veut les projections dans le cas ou
+                                            //Il y à un * il faut prendre les projections de la première requête d'union ou intersection 
+                                            BinaryQueryExpression currBinaryQueryExpression = (BinaryQueryExpression)currQueryDerivedTable.QueryExpression;
+                                            
+
+                                            while (currBinaryQueryExpression.FirstQueryExpression is BinaryQueryExpression)
+                                            {
+                                                currBinaryQueryExpression = (BinaryQueryExpression)currBinaryQueryExpression.FirstQueryExpression;
+                                            }
+                                            if (currBinaryQueryExpression.FirstQueryExpression is QuerySpecification)
+                                            {
+                                                QuerySpecification currQuerySpecification = (QuerySpecification)currBinaryQueryExpression.FirstQueryExpression;
+                                                recursifRecuperationProjection(currQuerySpecification);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (starExpression == false)
+                {
+                    foreach (SelectElement selectElement in node.SelectElements)
+                    {
+                        projectionList.Add(GetNodeTokenText(selectElement));
+                    }
+                }
+            }
         }
         public override void Visit(DeleteSpecification node)
         {
