@@ -127,10 +127,10 @@ public class PreTraitement
             noeud.InnerText = requete;
             nouveau.AppendChild(noeud);
             /*Pour chaque projection trouvvé, on crée un élément correspond*/
-            noeud = doc.CreateElement("tables");
+            noeud = doc.CreateElement("projections");
             foreach (var element in projections.Split("|"))
             {
-                sousn = doc.CreateElement("table");
+                sousn = doc.CreateElement("projection");
                 sousn.InnerText = element;
                 noeud.AppendChild(sousn);
             }
