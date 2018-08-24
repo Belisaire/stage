@@ -16,3 +16,8 @@ Pour réaliser cette abstractions, nous avons utilisé un parser SQL : MSDN Tsql
 # Output
 
 En sortie de ce script, on obtient un ficher XML ayant découpé l'ensemble des requêtes en explorations et en transformant ces dernières en Quadruplet comme décrit ci-dessus.
+
+
+![tree_xml](https://user-images.githubusercontent.com/15943103/44581734-32e04f80-a79f-11e8-82f6-e1ff3587da6e.png)
+
+Le fichier est composé d'une balise racine "requests" qui contient toutes les explorations. Dans chaque exploration on retrouve les requêtes qui lui sont associées. Enfin dans la balise requête on retrouve le formatage en quadruplet ainsi que l'id et le texte de la requête.  
