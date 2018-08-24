@@ -15,7 +15,7 @@ Pour réaliser cette abstractions, nous avons utilisé un parser SQL : MSDN Tsql
 
 # Output
 
-En sortie de ce script, on obtient un ficher XML ayant découpé l'ensemble des requêtes en explorations et en transformant ces dernières en Quadruplet comme décrit ci-dessus.
+En sortie de ce script, on obtient un ficher XML découpant l'ensemble des requêtes en explorations et en transformant ces dernières en Quadruplet comme décrit ci-dessus.
 
 
 ![tree_xml](https://user-images.githubusercontent.com/15943103/44581734-32e04f80-a79f-11e8-82f6-e1ff3587da6e.png)
