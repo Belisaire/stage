@@ -1,4 +1,4 @@
-# Script c# de transformation de requêtes SQL
+# Script c# de transformation de requêtes SQL (la branche la plus à jour est latest_version-2)
 
 Dans le cadre de notre stage de master Yann et moi (willeme) avont développé un script c# de transfromation de données. Il prend en input des requêtes SQL écritent dans le dialect SQL Server puis les transforment en quadruplet : 
  - Un ensemble de projections
