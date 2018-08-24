@@ -10,7 +10,7 @@ Par exemple, pour un cas simple voici l'abstraction en quadruplet de la requête
 
 ![cas_simple](https://user-images.githubusercontent.com/15943103/44573805-eb01fe00-a787-11e8-90f3-04e222be47ff.png)
 
-Pour réaliser cette abstractions, nous avons utilisé un parser SQL : MSDN TsqlParser et les données en entrées sont issues d'une application SQL-as-a-service qui a gracieusement partagée ses données (cf : https://homes.cs.washington.edu/~billhowe/publications/pdfs/jain2016sqlshare.pdf).
+Pour réaliser cette abstractions, nous avons utilisé un parser SQL : MSDN TsqlParser et les requêtes SQL en entrée sont issues d'une application SQL-as-a-service qui a gracieusement partagée ses données (cf : https://homes.cs.washington.edu/~billhowe/publications/pdfs/jain2016sqlshare.pdf).
 
 
 # Output
