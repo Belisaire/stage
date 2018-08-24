@@ -21,3 +21,8 @@ En sortie de ce script, on obtient un ficher XML ayant découpé l'ensemble des 
 ![tree_xml](https://user-images.githubusercontent.com/15943103/44581734-32e04f80-a79f-11e8-82f6-e1ff3587da6e.png)
 
 Le fichier est composé d'une balise racine "requests" qui contient toutes les explorations. Dans chaque exploration on retrouve les requêtes qui lui sont associées. Enfin dans la balise requête on retrouve le formatage en quadruplet ainsi que l'id et le texte de la requête.  
+
+## Authors
+
+* **VERDEAUX Willeme** - willeme.verdeaux@etu.univ-tours.fr
+* **RAYMOND Yann** - yann.raymont@etu.univ-tours.fr
