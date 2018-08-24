@@ -30,13 +30,14 @@ namespace TransactSqlScriptDomTest
         public List<String> previousProjectionList = new List<String>();
         public Dictionary<int, List<String>> ProjectionListPerQuery = new Dictionary<int, List<String>>();
         public List<String> projectionList;
-        public int id_explo_courant = 0;
-        public int id_explo_precedant = -1;
-
+        public int id_explo = 0;
         static string path_myfriend = @"..\..\..\myfriend.txt";
         static string path_explo = @"..\..\..\explo.txt";
         static string path_test = @"..\..\..\..\..\..\test.xml";
         private string selection = "";
+        public List<String> TableReferenceTypeQualifiedJoin = new List<String>();
+        public int id_explo_courant = 0;
+        public int id_explo_precedant = -1;
         List<XmlElement> ExplorationTemp = new List<XmlElement>();
 
         /*In : fragment
@@ -84,13 +85,8 @@ namespace TransactSqlScriptDomTest
             id_requete_courante = Int32.Parse(this.id);
             node.ToString();
 
-            bool starExpression = false;
-            //Il est possible que la fonction soit appelé pour une même requête du jeu de données  car une requête peut contenir des sous requêtes, et on veut le select major ( le plus englobant) 
-            //Du coup on ne veut pas que le traitement suivant se fasse pour les select moins englobant d'une requête. On veut juste qu'il se déclenche pour le 1er
-            //Typiquement : select * from ( select * from mytable ); 
-            //Déclenche 2 fois la fonction visit( QuerySpecification ), Une fois en ayant pour valeur : select * from ( select * from mytable) 
-            // Qui est exactement ce qu'on veut car il s'agit du select le plus englobant
-            // ET une deuxième fois en prennant la valeur : select * from mytable / Qui est une sous requête à la requête globale.
+            //bool starExpression = false;
+
             if (this.id_requete_courante != this.id_requete_precedante)
             {
                 projectionList = new List<String>();
@@ -104,85 +100,8 @@ namespace TransactSqlScriptDomTest
                     this.user_courant = matchTexte.Split('.')[0].Replace("[", "").Replace("]", "");
 
                 }
-                if (node.SelectElements != null)
-                {
-                    foreach (TSqlFragment selectElement in node.SelectElements)
-                    {
-                        if (selectElement is SelectStarExpression)
-                        {
-                            starExpression = true;
-                            if (node.SelectElements.Count > 1)
-                            {
-                                //Lever une exception qui dit que c'est non géré*
-
-                                break;
-                            }
-                            else
-                            {
-                                if (node.FromClause != null)
-                                {
-                                    foreach (TSqlFragment fromElement in node.FromClause.TableReferences)
-                                    {
-                                        if (fromElement is NamedTableReference)
-                                        {
-                                            String namedTableReferenceText = GetNodeTokenText(fromElement);
-                                            if (this.dictTableWith.ContainsKey(this.id_requete_courante))
-                                            {
-                                                foreach (CommonTableExpression commonTableExpression in this.dictTableWith[this.id_requete_courante])
-                                                {
-                                                    if (commonTableExpression.ExpressionName.Value == namedTableReferenceText)
-                                                    {
-                                                        if (commonTableExpression.QueryExpression is QuerySpecification)
-                                                        {
-                                                            QuerySpecification queryUsedForTableDefinition = (QuerySpecification)commonTableExpression.QueryExpression;
-                                                            foreach (SelectElement selectElementInQueryUsedForTableDefinition in queryUsedForTableDefinition.SelectElements)
-                                                            {
-                                                                projectionList.Add(GetNodeTokenText(selectElementInQueryUsedForTableDefinition));
-                                                            }
-                                                        }
-
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                Regex rx = new Regex(@"\[.*\]\.\[.*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                                                // Find matches.
-                                                //Console.WriteLine(this.PhysicalTableList["[1002].[Tokyo_0_merged.csv]"]);
-                                                String matchText = "";
-                                                MatchCollection matches = rx.Matches(namedTableReferenceText);
-                                                if (matches.Count > 0)
-                                                {
-                                                    matchText = matches[0].Groups[0].Value;
-                                                }
-                                                if (this.PhysicalTableList.ContainsKey(matchText.ToLower()))
-                                                {
-                                                    foreach (String attribut in this.PhysicalTableList[matchText.ToLower()])
-                                                    {
-                                                        projectionList.Add(attribut);
-                                                    }
-                                                }
-
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    }
-                    if (starExpression == false)
-                    {
-                        foreach (SelectElement selectElement in node.SelectElements)
-                        {
-                            if (GetNodeTokenText(selectElement).Contains(','))
-                            {
-                                //  Console.WriteLine(GetNodeTokenText(selectElement));
-                            }
-                            projectionList.Add(GetNodeTokenText(selectElement));
-                        }
-                    }
-                }
+                //Jesus christ
+                recursifRecuperationProjection(node);
 
                 ProjectionListPerQuery.Add(this.id_requete_courante, projectionList);
                 int nombreProjectionsCommunes = 0;
@@ -192,7 +111,7 @@ namespace TransactSqlScriptDomTest
                     nombreProjectionsCommunes = 0;
                     if (!user_courant.Equals(user_precedant))
                     {
-                        this.id_explo_courant = this.id_explo_courant + 1;
+                        this.id_explo = this.id_explo + 1;
                     }
                 }
                 else
@@ -206,7 +125,7 @@ namespace TransactSqlScriptDomTest
                 using (StreamWriter sw = File.AppendText(path_explo))
                 {
 
-                    sw.WriteLine(this.id_requete_courante + ";" + user_courant + ";" + this.id_explo_courant);
+                    sw.WriteLine(this.id_requete_courante + ";" + user_courant + ";" + this.id_explo);
                 }
                 previousProjectionList = projectionList;
                 user_precedant = user_courant;
@@ -232,6 +151,178 @@ namespace TransactSqlScriptDomTest
             this.id_requete_precedante = this.id_requete_courante;
 
         }
+        private List<String> GetProjectionsFromTablesReference(String referenceTableName)
+        {
+            List<String> projectionListCurrentObject = new List<String>();
+            if (this.dictTableWith.ContainsKey(this.id_requete_courante))
+            {
+                foreach (CommonTableExpression commonTableExpression in this.dictTableWith[this.id_requete_courante])
+                {
+                    if (commonTableExpression.ExpressionName.Value == referenceTableName)
+                    {
+                        if (commonTableExpression.QueryExpression is QuerySpecification)
+                        {
+                            QuerySpecification queryUsedForTableDefinition = (QuerySpecification)commonTableExpression.QueryExpression;
+                            foreach (SelectElement selectElementInQueryUsedForTableDefinition in queryUsedForTableDefinition.SelectElements)
+                            {
+                                projectionList.Add(GetNodeTokenText(selectElementInQueryUsedForTableDefinition));
+                            }
+                        }
+
+                    }
+                }
+            }
+            else
+            {
+                Regex rx = new Regex(@"\[.*\]\.\[.*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                // Find matches.
+                //Console.WriteLine(this.PhysicalTableList["[1002].[Tokyo_0_merged.csv]"]);
+                String matchText = "";
+                MatchCollection matches = rx.Matches(referenceTableName);
+                if (matches.Count > 0)
+                {
+                    matchText = matches[0].Groups[0].Value;
+                    if (this.PhysicalTableList.ContainsKey(matchText.ToLower()) || this.PhysicalTableList.ContainsKey(matchText))
+                    {
+                        if (this.PhysicalTableList.ContainsKey(matchText.ToLower()))
+                        {
+                            foreach (String attribut in this.PhysicalTableList[matchText.ToLower()])
+                            {
+                                projectionList.Add(attribut);
+                            }
+                        }
+                        if (this.PhysicalTableList.ContainsKey(matchText))
+                        {
+                            foreach (String attribut in this.PhysicalTableList[matchText])
+                            {
+                                projectionList.Add(attribut);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    //Ce que je pense qu'il faille faire c'est de regarder si, telle quelle, la referencetable 
+                    //est égale à la valeur ici => [numero].[valeur]
+                    rx = new Regex(@"\[[^\[\]]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    matchText = "";
+                    matches = rx.Matches(referenceTableName);
+                    if (matches.Count == 1)
+                    {
+                        foreach (String value in this.PhysicalTableList.Keys)
+                        {
+                            matches = rx.Matches(value);
+                            if (matches.Count == 2)
+                            {
+                                matchText = matches[1].Groups[0].Value;
+                                if (referenceTableName.ToLower() == matchText.ToLower() || referenceTableName.ToLower() == matchText.ToLower().Replace("[", "").Replace("]", ""))
+                                {
+                                    foreach (String attribut in this.PhysicalTableList[value])
+                                    {
+                                        projectionList.Add(attribut);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return projectionListCurrentObject;
+        }
+        private void recursifRecuperationProjection(QuerySpecification node)
+        {
+            bool starExpression = false;
+            if (node.SelectElements != null)
+            {
+                foreach (TSqlFragment selectElement in node.SelectElements)
+                {
+                    if (selectElement is SelectStarExpression)
+                    {
+                        starExpression = true;
+                        if (node.SelectElements.Count > 1)
+                        {
+                            //Lever une exception qui dit que c'est non géré*
+
+                            break;
+                        }
+                        else
+                        {
+                            if (node.FromClause != null)
+                            {
+                                foreach (TSqlFragment fromElement in node.FromClause.TableReferences)
+                                {
+
+                                    if (fromElement is NamedTableReference)
+                                    {
+                                        String namedTableReferenceText = GetNodeTokenText(fromElement);
+                                        projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
+
+                                    }
+                                    if (fromElement is QualifiedJoin)
+                                    {
+                                        QualifiedJoin currQualifiedJoin = (QualifiedJoin)fromElement;
+                                        if (currQualifiedJoin.FirstTableReference is NamedTableReference && currQualifiedJoin.SecondTableReference is NamedTableReference)
+                                        {
+                                            String namedTableReferenceText1 = GetNodeTokenText(currQualifiedJoin.FirstTableReference);
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText1));
+
+                                            String namedTableReferenceText2 = GetNodeTokenText(currQualifiedJoin.SecondTableReference);
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText2));
+                                        }
+
+
+                                    }
+                                    if (fromElement is PivotedTableReference)
+                                    {
+                                        PivotedTableReference currPivotedTable = (PivotedTableReference)fromElement;
+                                        if (currPivotedTable.TableReference is NamedTableReference)
+                                        {
+                                            String namedTableReferenceText = GetNodeTokenText(currPivotedTable.TableReference);
+                                            projectionList.AddRange(GetProjectionsFromTablesReference(namedTableReferenceText));
+
+                                        }
+                                    }
+                                    if (fromElement is QueryDerivedTable)
+                                    {
+                                        QueryDerivedTable currQueryDerivedTable = (QueryDerivedTable)fromElement;
+                                        if (currQueryDerivedTable.QueryExpression is QuerySpecification)
+                                        {
+                                            QuerySpecification currQuerySpecification = (QuerySpecification)currQueryDerivedTable.QueryExpression;
+                                            recursifRecuperationProjection(currQuerySpecification);
+                                        }
+                                        if (currQueryDerivedTable.QueryExpression is BinaryQueryExpression)
+                                        {
+                                            //BinaryQueryExpression représente un union entre deux requête donc si on veut les projections dans le cas ou
+                                            //Il y à un * il faut prendre les projections de la première requête d'union ou intersection 
+                                            BinaryQueryExpression currBinaryQueryExpression = (BinaryQueryExpression)currQueryDerivedTable.QueryExpression;
+
+
+                                            while (currBinaryQueryExpression.FirstQueryExpression is BinaryQueryExpression)
+                                            {
+                                                currBinaryQueryExpression = (BinaryQueryExpression)currBinaryQueryExpression.FirstQueryExpression;
+                                            }
+                                            if (currBinaryQueryExpression.FirstQueryExpression is QuerySpecification)
+                                            {
+                                                QuerySpecification currQuerySpecification = (QuerySpecification)currBinaryQueryExpression.FirstQueryExpression;
+                                                recursifRecuperationProjection(currQuerySpecification);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+                if (starExpression == false)
+                {
+                    foreach (SelectElement selectElement in node.SelectElements)
+                    {
+                        projectionList.Add(GetNodeTokenText(selectElement));
+                    }
+                }
+            }
+        }
         public override void Visit(DeleteSpecification node)
         {
             WhereClause lol = node.WhereClause;
@@ -245,6 +336,7 @@ namespace TransactSqlScriptDomTest
         /*A chaque join trouvé dans la requête*/
         public override void Visit(QualifiedJoin node)
         {
+
             /*On récupére l'information en un string pour pouvoir effectuer des opérations dessus
              On enlève toutes les majuscules*/
             string study = GetNodeTokenText(node).ToLower();
@@ -272,6 +364,7 @@ namespace TransactSqlScriptDomTest
                 study = study.Substring(0, match.Index) + " " + study.Substring(match.Index + match.Length, study.Length - (match.Index + match.Length));
                 match = regex.Match(study);
             }
+
         }
         /*Recherche les aggregates*/
         public override void Visit(FunctionCall node)
@@ -296,7 +389,7 @@ namespace TransactSqlScriptDomTest
             filtreWith = true;
             string fromWith = GetNodeTokenText(node).ToLower();
             /*On récupère la clause qui nous intéresse*/
-            Regex regex = new Regex(@"(from[\s+]*(\[[A-z.0-9]*\].\[[A-z.0-9]*.*\][ ]*[A-z0-9]*)([\s+]*,[ ]*\[[0-9A-z.]*\].\[[A-z0-9.]*\][ ]*[A-z0-9]*)?|join[\s+]*\[[A-z .0-9]*\][ ]*[A-z0-9]*|join[\s+]+[\[\]A-z0-9.]*|from[/s+]*[A-z0-9]*\.[A-z0-9]*|from[\s+]*[A-z ]*[ ]*[A-z0-9]|from[\s+]\[[A-z.0-9 ]*\][ ]*[A-z0-9]*)");
+            Regex regex = new Regex(@"(from[\s+]*\[[0-9.A-z]*\].[\s+]*\[[A-z0-9. ,'-]*\]|from[\s+]*[A-z.0-9- ]+|join[\s+]+\[[A-z0-9\-]*\].\[[A-z0-9 .-]*\]|join[\s+]+[A-z.0-9\- ]*)");
             Match match = regex.Match(fromWith);
             fromClause = "";
             /*Tant qu'il y a des from qui nous intéresse*/
@@ -319,10 +412,17 @@ namespace TransactSqlScriptDomTest
         }
 
 
+
         /*Extrait les FromClause*/
         public override void Visit(FromClause node)
         {
-
+            foreach (TSqlFragment fromElement in node.TableReferences)
+            {
+                if (!TableReferenceTypeQualifiedJoin.Contains(fromElement.GetType().ToString()))
+                {
+                    TableReferenceTypeQualifiedJoin.Add(fromElement.GetType().ToString());
+                }
+            }
             string from = GetNodeTokenText(node).ToLower();
             /*supprime les possibles commentaires*/
             Regex rgx = new Regex(@"--[A-z0-9\(\)\[\],._!=<>'\s+][^\r\n]*");
@@ -487,13 +587,13 @@ namespace TransactSqlScriptDomTest
         public void Add()
         {
             /*Si le doc n'est pas crée, on le crée, on ajoute le noeud root "requêtes" qui contiendra toute les traitements de chaque requête*/
-            if (doc == null)
+            if (this.doc == null)
             {
-                doc = new XmlDocument();
-                XmlDeclaration dec = doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
-                doc.AppendChild(dec);
-                XmlElement root = doc.CreateElement("requests");
-                doc.AppendChild(root);
+                this.doc = new XmlDocument();
+                XmlDeclaration dec = this.doc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
+                this.doc.AppendChild(dec);
+                XmlElement root = this.doc.CreateElement("requests");
+                this.doc.AppendChild(root);
             }
             /*On supprime le premier | pour éviter de créer des noeuds vides*/
             selection = selection.Substring(selection.IndexOf("|") + 1, selection.Length - selection.IndexOf("|") - 1);
@@ -531,12 +631,14 @@ namespace TransactSqlScriptDomTest
             XmlElement nouveau = null;
             XmlElement noeud = null;
             XmlElement sousn = null;
+            XmlElement el = (XmlElement)doc.SelectSingleNode("requests");
+            this.id_explo_courant = this.id_explo;
             try
             {
                 if (id_explo_courant != id_explo_precedant && id_explo_precedant != -1)
                 {
 
-                    XmlElement el = (XmlElement)doc.SelectSingleNode("requests");
+                    
                     noeud = doc.CreateElement("exploration");
                     foreach (XmlElement element in ExplorationTemp)
                     {
@@ -544,6 +646,7 @@ namespace TransactSqlScriptDomTest
                     }
                     el.AppendChild(noeud);
                     this.ExplorationTemp = new List<XmlElement>();
+                    
 
                 }
                 /*On crée l'élément requête qui contiendra tout les éléments*/
@@ -618,6 +721,4 @@ namespace TransactSqlScriptDomTest
         }
     }
 }
-
-
 
