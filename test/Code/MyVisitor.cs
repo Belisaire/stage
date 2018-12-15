@@ -29,11 +29,11 @@ namespace TransactSqlScriptDomTest
         public Dictionary<string, List<string>> PhysicalTableList = new Dictionary<string, List<string>>();
         public List<String> previousProjectionList = new List<String>();
         public Dictionary<int, List<String>> ProjectionListPerQuery = new Dictionary<int, List<String>>();
-        public List<String> projectionList;
+        public List<String> projectionList = new List<String>();
         public int id_explo = 0;
         static string path_myfriend = @"..\..\..\myfriend.txt";
         static string path_explo = @"..\..\..\explo.txt";
-        static string path_test = @"..\..\..\..\..\..\test.xml";
+        static string path_test = @"..\..\test.xml";
         private string selection = "";
         public List<String> TableReferenceTypeQualifiedJoin = new List<String>();
         public int id_explo_courant = 0;
@@ -89,7 +89,7 @@ namespace TransactSqlScriptDomTest
 
             if (this.id_requete_courante != this.id_requete_precedante)
             {
-                projectionList = new List<String>();
+                
                 Regex rxUser = new Regex(@"\[[^\[\]\(\)]*\]\.\[[^\[\]\(\)]*\]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 // Find matches.//
                 //Console.WriteLine(this.PhysicalTableList["[1002].[Tokyo_0_merged.csv]"]);
@@ -122,30 +122,10 @@ namespace TransactSqlScriptDomTest
                         //Faire l'intersection
                     }
                 }
-                using (StreamWriter sw = File.AppendText(path_explo))
-                {
 
-                    sw.WriteLine(this.id_requete_courante + ";" + user_courant + ";" + this.id_explo);
-                }
                 previousProjectionList = projectionList;
                 user_precedant = user_courant;
 
-                using (StreamWriter sw = File.AppendText(path_myfriend))
-                {
-
-                    sw.Write("\n-------\nProjection pour la requête : " + this.requete);
-                    //sw.Write("Projections pour la requête : " + text_requete_courante);
-                    // Console.WriteLine(" Sont : ");
-                    //sw.Write("\n Sont :");
-
-                    foreach (String projection in projectionList)
-                    {
-                        //Console.WriteLine(projection);
-                        sw.Write("\n" + projection);
-
-                    }
-                    sw.Write("\n--------\n");
-                }
             }
 
             this.id_requete_precedante = this.id_requete_courante;
@@ -191,7 +171,7 @@ namespace TransactSqlScriptDomTest
                                 projectionList.Add(attribut);
                             }
                         }
-                        if (this.PhysicalTableList.ContainsKey(matchText))
+                        else if (this.PhysicalTableList.ContainsKey(matchText))
                         {
                             foreach (String attribut in this.PhysicalTableList[matchText])
                             {
@@ -709,6 +689,7 @@ namespace TransactSqlScriptDomTest
                 nouveau.AppendChild(noeud);
                 ExplorationTemp.Add(nouveau);
                 this.id_explo_precedant = this.id_explo_courant;
+                projectionList = new List<String>();
                 /*on ajoute le noeud requête en entier au doc*/
 
 

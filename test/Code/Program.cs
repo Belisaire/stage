@@ -42,12 +42,6 @@ namespace TransactSqlScriptDomTest
                 }
                 if (!PhysicalTableList.ContainsKey(matchText2))
                 {
-                    using (StreamWriter sw = File.AppendText(path_myf))
-                    {
-
-                        sw.WriteLine(matchText2 + " " + matchText.Replace("(", "").Replace(")", ""));
-
-                    }
                     //Console.WriteLine("le match est : " + matchText.Replace("(", "").Replace(")", "") + ", pour la vue nommée : " + matchText2);
                     PhysicalTableList.Add(matchText2, new List<String>(matchText.Replace("(", "").Replace(")", "").Split(',')));
                 }
